@@ -1,0 +1,232 @@
+
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>JourneyNotes</title>
+    </head>
+    <body>
+        <div id="trip-checklist" data-role="page">
+
+            <style scoped>
+                .ui-li-static.ui-collapsible > .ui-collapsible-heading {
+                    margin: 0;
+                }
+                .ui-li-static.ui-collapsible {
+                    padding: 0;
+                }
+                .ui-li-static.ui-collapsible > .ui-collapsible-heading > .ui-btn {
+                    border-top-width: 0;
+                }
+                .ui-li-static.ui-collapsible > .ui-collapsible-heading.ui-collapsible-heading-collapsed > .ui-btn,
+                .ui-li-static.ui-collapsible > .ui-collapsible-content {
+                    border-bottom-width: 0;
+                }                
+            </style>
+            <script>
+
+                var tripname;
+                var fileData;
+                var btnDropbox;
+                var itemToDelete;
+                
+                $('#trip-checklist').on('pageinit', function (e, data) {
+
+                    var parameters = $(this).data("url").split("?")[1];
+                    if (parameters !== undefined) {
+                        tripname = parameters.split("&")[0].replace("tripname=",""); 
+                    }
+                    $('#trip_checklist_title').empty().append($.i18n.prop("trip_checklist_title"));
+
+                    var cancelLink = "<a id='a_back' href='trip.html?tripname=" + tripname
+                             + "' class='ui-btn ui-btn-inner'><i class='lIcon fa fa-backward'></i></a>";
+                    $('#tripchecklist-header-controlgroup').append(cancelLink);
+        
+                    var setupLink = "<a href=\"javascript:addToChecklist('" + tripname + 
+                            "')\" class='ui-btn ui-btn-inner'><i class='lIcon fa fa-plus'></i></a>";
+                    $('#tripchecklist-header-controlgroup').append(setupLink);
+                    
+                    buildListview();
+                    addPanel();
+                });
+
+                function onConfirmCreate(buttonIndex) {
+                    if (debug_mode) {
+                        console.log('You selected button ' + buttonIndex);
+                    }
+                    if (buttonIndex === 1) {
+                        persistence.transaction(function(tx) {
+                            ChecklistCategoryItem.all().forEach(function(item) {
+                                //Insert TripCategoryItem
+                                if (debug_mode) {
+                                    console.log("inserting " + $(item).data('description'));
+                                }
+                                var obj = new TripCategoryItem({tripname: tripname,
+                                    categoryname: $(item).data('categoryname'), 
+                                    description: $(item).data('description'),
+                                    quantity: $(item).data('quantity'),
+                                    checked: false,
+                                    notes: $(item).data('notes')}); 
+                                persistence.add(obj);
+                            });
+                            persistence.flush(tx, function(t) {
+                                if (t === undefined) {
+                                    //alert($.i18n.prop("msg_checklist_created", tripname));
+                                    buildListview();
+                                }
+                                else {
+                                    navigator.notification.alert(
+                                        jQuery.i18n.prop("msg_error_generic"),
+                                        null, 'JourneyNotes', 'Ok');
+                                }
+                            });
+                        });
+                    }
+                }
+
+                function addToChecklist (tripname) {
+
+                    TripCategoryItem.all().filter("tripname", "=", tripname)
+                                .count(null, function (numOfItems) {
+                        if (numOfItems === 0) {
+                            navigator.notification.confirm(
+                                $.i18n.prop("msg_create_from_template"), // message
+                                onConfirmCreate,          // callback to invoke with index of button pressed
+                                'JourneyNotes',           // title
+                                [$.i18n.prop("msg_yes"), $.i18n.prop("msg_no")]     // buttonLabels
+                            );
+                        }
+                        else {
+                            //change page and go to new item
+                            $.mobile.changePage("trip_catalog_item.html?tripname=" + tripname);
+                        }
+                    });                    
+                }
+
+                function onConfirmDelete(buttonIndex) {
+                    if (debug_mode) {
+                        console.log('You selected button ' + buttonIndex);
+                    }
+                    if (buttonIndex === 1) {
+                        TripCategoryItem.all().filter("tripname", "=", tripname)
+                                .filter("description", "=", itemToDelete)
+                                .forEach(function(item) {
+                            persistence.transaction(function(tx) {
+                                persistence.remove(item);
+                                persistence.flush(tx, function(tx) { 
+                                    if (typeof tx === 'undefined' || tx.toString() === "") {
+                                        buildListview();
+                                    }
+                                    else {
+                                        navigator.notification.alert(
+                                            jQuery.i18n.prop("msg_error_generic"),
+                                            null, 'JourneyNotes', 'Ok');
+                                    }
+                                });
+                            });
+                        });
+                    }
+                }
+
+                // Click delete split-button to remove list item
+                function confirmAndDelete( listitem ) {
+                    
+                    itemToDelete = listitem;
+                    
+                    navigator.notification.confirm(
+                        $.i18n.prop("msg_confirm_delete", listitem), // message
+                        onConfirmDelete,          // callback to invoke with index of button pressed
+                        'JourneyNotes',           // title
+                        [$.i18n.prop("msg_yes"), $.i18n.prop("msg_no")]     // buttonLabels
+                    );
+                }
+
+                function buildListview() {
+
+                    var category = "";
+                    var categoryname = "";
+                    var content = "";
+                    fileData = "";
+                    
+                    TripCategoryItem.all().filter("tripname", "=", tripname)
+                            .order("categoryname", true)
+                            .order("description", true)
+                                .list(null, function (items) {
+                                    
+                        $("#trip-list").empty();
+                        items.forEach(function(item) {
+                            
+                            if (category !== $(item).data('categoryname')) {
+                                if (category !== "") {
+                                    content += "</ul></div>";
+                                }
+                                content += "<div data-role='collapsible' data-collapsed='true'>"
+                                   + "<h2>" + $(item).data('categoryname') + "</h2>"
+                                   + "<ul data-role='listview' data-theme='b'>";
+                                category = $(item).data('categoryname');
+                            }
+                            content += "<li><a href='trip_catalog_item.html?tripname="
+                                + tripname + "&category=" + $(item).data('categoryname') + "&item=" 
+                                + $(item).data('description') + "' >" 
+                                + $(item).data('description') 
+                                + " <span class='ui-li-count'>" 
+                                + $(item).data('quantity') + "</span><b>"
+                                + getreadyicon(item)
+                                + "</b></a><a href='javascript:confirmAndDelete(\""
+                                + $(item).data('description')
+                                + "\");' data-icon='delete'>Delete</a></li>";
+                        
+                            if ($(item).data('categoryname') !== categoryname) {
+                                fileData = fileData + $(item).data('categoryname') + "\n";
+                                categoryname = $(item).data('categoryname');
+                            }
+                            fileData = fileData + $(item).data('description') + " ("
+                                + $(item).data('quantity') + ") "
+                                + getreadyicon($(item).data('checked')) + " - " 
+                                + $(item).data('notes') + "\n";
+                            
+                        });
+                        content += "</ul></li>";
+                        $(content).appendTo("#trip-list").enhanceWithin();
+                        $("#trip-list").collapsibleset('refresh');
+                    });
+                }
+
+                function exportGoogle() {
+                    
+                    if (debug_mode) {
+                        console.log(fileData);
+                    }
+                    uploadFileGDrive(tripname, tripname + "-checklist.txt", fileData, "text/plain");
+                }
+            </script>
+                
+            <div data-role="panel" data-position-fixed="true" id="mypanel" data-theme="b">
+                <!-- panel content goes here -->
+            </div><!-- /panel -->
+            
+            <div id="trip-checklist-header" data-role="header" data-position="fixed" data-tap-toggle="false" data-theme='b'>
+                <a href="#mypanel" data-ajax="false"><i class='lIcon fa fa-bars'></i></a>
+                <h1 id="trip_checklist_title"></h1>
+                <div id="tripchecklist-header-controlgroup" class="ui-btn-right">
+                </div>
+            </div><!-- /header -->
+            
+            <div data-role="content">
+	        <div class='inset'>
+
+                    <div id="trip-list" data-role="collapsible-set" data-content-theme="b">
+                    </div>
+                    
+                    <div class="ui-field-contain">
+                        <div>
+                            <a href="javascript:exportGoogle()">
+                                <img src='themes/images/upload.png' alt='Google drive' height="32" width="32"/>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div><!-- /content -->
+        </div><!-- /page -->
+        
+    </body>
+</html>

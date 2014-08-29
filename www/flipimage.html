@@ -1,0 +1,264 @@
+
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>JourneyNotes</title>
+    </head>
+    <body>
+        <div id="flipimage" data-role="page">
+
+            <style scoped>
+                #slide1_container {
+                    overflow:hidden; /* So the sliding bit doesn't stick out. */
+                    margin:0 auto;
+                }
+                #slide1_images {
+                    /* This is the bit that moves. You could use javascript
+                    to work this out instead by counting images. */
+                    -webkit-transition:all 1.0s ease-in-out;
+                    -moz-transition:all 1.0s ease-in-out;
+                    -o-transition:all 1.0s ease-in-out;
+                    transition:all 1.0s ease-in-out;
+                }
+                #slide1_images img {
+                    padding:0;
+                    margin:0;
+                    float:left; /* All the images are in a row next to each other. */
+                }
+            </style>
+            
+            <script type="text/javascript">
+
+                var tripname;
+                var pictname;
+                var startDate;
+                var photoBuf = [];
+                var current_p;
+    
+                $('#flipimage').on('pageinit', function (e, data) {
+                    
+                    $("a#mnu_close").attr('href', 'place.html?tripname=' + tripname + 
+                            "&startDate=" + startDate + "&tab=1");
+                    
+                    var parameters = $(this).data("url").split("?")[1];
+                    tripname = parameters.split("&")[0].replace("tripname=","");  
+                    startDate = $(this).data("url").split("&")[1].replace("startDate=","");  
+                    pictname = $(this).data("url").split("&")[2].replace("pict=","");  
+                    
+                    //set width and fill container with images
+                    fillContainerWithImages();
+                    
+                    var cancelLink = $("<a id='a_cancel' href='place.html?tripname=" + tripname + 
+                            "&startDate=" + startDate + 
+                            "&tab=1' class='ui-btn ui-btn-inner'><i class='lIcon fa fa-backward'></i></a>");
+                    $('#flipimage-controlgroup').append(cancelLink);
+                    
+                    // Bind the swipe handlers callback function
+                    $("#slide1_images").on('swipeleft', function (e) {
+                        move(1);
+                    }); 
+                    $("#slide1_images").on('swiperight', function (e) {
+                        move(-1);
+                    });
+                    
+                    addPanel();
+                });
+                
+                function move(direction) {
+                    if (debug_mode) {
+                        console.log("dir = " + direction + ", current_p = ");
+                    }
+                    if (direction === 1 && current_p < (photoBuf.length - 1)) {
+                        current_p = current_p + 1;
+                    }
+                    else if (direction === -1 && current_p > 0) {
+                        current_p = current_p - 1;
+                    }
+                    if (debug_mode) {
+                        console.log("photo[" + current_p + "] = " + photoBuf[current_p]);
+                    }
+                    pictname = photoBuf[current_p];                        
+                    $("#slide1_images").css("transform", "translateX(" + 
+                            (current_p * -1 * window.screen.availWidth) + "px)");
+                }
+
+                function select() {
+                    
+                    PlacePicture.all()
+                        .filter("tripname", "=", tripname)
+                        .filter("startDate", "=", startDate)
+                        .order('pictureUri', true)
+                        .list(null, function (pictures) {
+                        pictures.forEach(function(item) {
+
+                            var sel = "0";
+                            if ($(item).data('picture') === pictname) {
+                                sel = "1";
+                            }
+                            $(item).data('selectedImg', sel);
+                        });
+                        persistence.flush(function(tx) { 
+                            if (typeof tx === 'undefined' || tx.toString() === "") {
+                                $.mobile.changePage("place.html?tripname=" + tripname + 
+                                        "&startDate=" + startDate + "&tab=1");                                 
+                            }
+                            else {
+                                navigator.notification.alert(
+                                    $.i18n.prop("msg_error_generic"),
+                                    null, 'JourneyNotes', 'Ok');
+                            }
+                        });
+                    });
+                }
+                
+                function onConfirmDelete(buttonIndex) {
+                    if (debug_mode) {
+                        console.log('You selected button ' + buttonIndex);
+                    }
+                    if (buttonIndex === 1) {
+                        persistence.transaction(function(tx) {
+                            PlacePicture.all().filter("tripname", "=", tripname)
+                                .filter("startDate", "=", startDate)
+                                .filter("picture", "=", pictname)
+                                .forEach(function(item) {
+
+                                        persistence.remove(item);
+                            });
+                            persistence.flush(tx, function(tx1) { 
+                                if (tx1 === undefined || tx1.toString() === "") {
+                                    $.mobile.changePage("place.html?tripname=" + tripname + 
+                                            "&startDate=" + startDate + "&tab=1");                                 
+                                }
+                                else {
+                                    navigator.notification.alert(
+                                        $.i18n.prop("msg_error_generic"),
+                                        null, 'JourneyNotes', 'Ok');
+                                }
+                            });
+                        });
+                    }
+                }
+
+                // Click delete split-button to remove list item
+                function confirmAndDelete() {
+                    navigator.notification.confirm(
+                        $.i18n.prop("msg_confirm_delete", pictname), // message
+                        onConfirmDelete,          // callback to invoke with index of button pressed
+                        'JourneyNotes',           // title
+                        [$.i18n.prop("msg_yes"), $.i18n.prop("msg_no")]     // buttonLabels
+                    );
+                }
+
+                function fillContainerWithImages() {
+                    
+                    var offset;
+                    if (debug_mode) {
+                        console.log("container dim = " + window.screen.availWidth);
+                    }
+                    document.getElementById('slide1_container').style.width = window.screen.availWidth + "px";
+                    //document.getElementById('slide1_container').style.height = parseInt("" + window.screen.availWidth * 3 / 4) + "px";
+                    if (debug_mode) {
+                        console.log("container dim ok");
+                    }
+                    PlacePicture.all()
+                        .filter("tripname", "=", tripname)
+                        .filter("startDate", "=", startDate)
+                        .count(null, function (numOfPhotos) {
+                                
+                            if (numOfPhotos > 0) {
+                                
+                                var divWidth = numOfPhotos * window.screen.availWidth;
+                                if (debug_mode) {
+                                    console.log("images width = " + divWidth);
+                                }
+                                document.getElementById('slide1_images').style.width = divWidth + "px";
+                                var idx = 0;
+                                PlacePicture.all()
+                                    .filter("tripname", "=", tripname)
+                                    .filter("startDate", "=", startDate)
+                                    .forEach(function(item) {
+                                        photoBuf.push($(item).data('picture'));
+                                        if (debug_mode) {
+                                            console.log("photo[" + idx + "] = " + $(item).data('picture'));
+                                        }
+                                        loadPhotos($(item).data('pictureUri'), 
+                                            function (b64data, w, h) {
+                                                $("#slide1_images").append("<img src='" + b64data + "'/>");
+                                            });
+                                        if ($(item).data('picture') === pictname) {
+                                            $('#flipimage_title').empty().append($(item).data('description'));
+                                            //set current image
+                                            current_p = idx;
+                                            offset = window.screen.availWidth * idx;
+                                            if (debug_mode) {
+                                                console.log("offset = " + offset);
+                                            }
+                                            $("#slide1_images").css("transform", 
+                                                    "translateX(" + (offset * -1) + "px)");     
+                                        }
+                                        idx = idx + 1;
+                                });
+                            }
+                    });                    
+                }
+
+                function loadPhotos(imageUrl, callback) {
+
+                    loadImage(imageUrl,
+                        function (img) {
+                            if (img.type === "error") {
+                                if (debug_mode) {
+                                    console.log("Error loading image " + imageUrl);
+                                }
+                            } 
+                            else {
+                                if (debug_mode) {
+                                    console.log("image dimensions: " + img.width + ", " + img.height);
+                                }
+                                callback(img.toDataURL("image/png"), img.width, img.height);
+                            }
+                        }, 
+                        { 
+                            maxWidth: window.screen.availWidth,
+                            canvas: true 
+                        }
+                    );
+                }
+                
+            </script>
+            
+            <div data-role="panel" data-position-fixed="true" id="mypanel" data-theme="b">
+                <!-- panel content goes here -->
+            </div><!-- /panel -->
+            
+            <div id="flipimage-header" data-role="header" data-position="fixed" data-tap-toggle="false" data-theme='b'>
+                <a href="#mypanel" data-ajax="false"><i class='lIcon fa fa-bars'></i></a>
+                <h1 id="flipimage_title"></h1>
+                <div id="flipimage-controlgroup" class="ui-btn-right">
+                </div>
+            </div><!-- /header -->
+
+            <div data-role="content">
+                
+                <div id='slide1_container' style='overflow: hidden;'>
+                    <div id="slide1_images">
+                        
+                    </div>
+                </div>
+                
+            </div><!-- /content -->
+            
+            <div data-role="footer" data-position="fixed" data-tap-toggle="false" data-theme="b">
+                <div data-role='navbar'>
+                    <ul>
+                        <li><a href="javascript:move(-1)" id="mnu_back" data-icon="back" data-iconpos="notext"></a></li>
+                        <li><a href="javascript:move(1)" id="mnu_next" data-icon="forward" data-iconpos="notext"></a></li>
+                        <li><a href="javascript:select()" id="mnu_select" data-icon="check" data-iconpos="notext"></a></li>
+                        <li><a href="javascript:confirmAndDelete()" id="mnu_delete" data-icon="delete" data-iconpos="notext"></a></li>
+                    </ul>
+                </div><!-- /navbar -->
+            </div><!-- /footer -->
+        </div><!-- /page -->
+        
+    </body>
+</html>

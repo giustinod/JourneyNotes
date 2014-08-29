@@ -1,0 +1,660 @@
+
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>JourneyNotes</title>
+    </head>
+    <body>
+        <div id="itinerary" data-role="page">
+
+            <style scoped>
+                /*
+                 * iPad media queries
+                 */
+                @media only screen 
+                    and (min-device-width: 768px) 
+                    and (max-device-width: 1024px) 
+                    and (orientation: landscape) {
+                    #map_canvas {
+                        padding: 0;
+                        margin: 0;
+                        height: 360px; 
+                        width: 100%;                      
+                    }
+                }
+
+                @media only screen 
+                    and (min-device-width: 768px) 
+                    and (max-device-width: 1024px) 
+                    and (orientation: portrait) {
+                    #map_canvas {
+                        padding: 0;
+                        margin: 0;
+                        height: 640px; 
+                        width: 100%;                      
+                    }
+                }
+
+                /*
+                 * All Smartphones in portrait and landscape
+                 */
+                @media only screen and (min-device-width: 320px) and (max-device-width: 480px) {
+                    #map_canvas {
+                        padding: 0;
+                        margin: 0;
+                        height: 240px; 
+                        width: 100%;                      
+                    }
+                }                
+            </style>
+            
+            <script type="text/javascript">
+
+                var map;
+                var tripname;
+                var kmlOutput = "";
+                var zipcontent;
+                var pictStrArray = {};
+                var pictDataArray = {};
+                var gMapsScriptLoaded = false;
+                var date_pattern;
+                var placesNo = 0;
+                var zip = null;
+                var myblob = null;
+                var photoCount;
+                var startDateToDelete;
+
+                function initialize() {
+                    if (debug_mode) {
+                        console.log('maps-API has been loaded, ready to use');
+                    }
+                    gMapsScriptLoaded = true;
+                    loadScript("js/geoxml3.js", function () {
+                        if (placesNo > 0) {
+                            $('#map_container').append("<div id='map_canvas'></div>");
+                            buildKmlForInlineMap();
+                        }
+                    });
+                }
+
+                $('#itinerary').on('pageinit', function (e, data) {
+
+                    var parameters = $(this).data("url").split("?")[1];
+                    tripname = parameters.replace("tripname=","");  
+                    
+                    $('#itinerary_title').empty().append($.i18n.prop("itinerary_title"));
+                    $('#label_share').empty().append($.i18n.prop("label_share"));                    
+        
+                    navigator.globalization.getDatePattern(
+                        function (date) {
+                            date_pattern = date.pattern;
+                        },
+                        function () {
+                            navigator.notification.alert(
+                                jQuery.i18n.prop("msg_error_date_pattern"),
+                                null, 'JourneyNotes', 'Ok');
+                        },
+                        {formatLength:'short', selector:'date'}
+                    );
+            
+                    buildListview();
+                    
+                    var cancelLink = "<a id='a_back' href='trip.html?tripname=" + tripname
+                             + "' class='ui-btn ui-btn-inner'><i class='lIcon fa fa-backward'></i></a>";
+                    $('#itinerary-header-controlgroup').append(cancelLink);
+                    
+                    TripPlace.all().filter("tripname", "=", tripname)
+                                    .count(null, function(numberOfItems) {
+                                        
+                        var addLink = "<a href='javascript:addToItinerary(" + numberOfItems 
+                            + ")' class='ui-btn ui-btn-inner'><i class='lIcon fa fa-plus'></i></a>";
+                        $('#itinerary-header-controlgroup').append(addLink);
+                    });
+                    
+                    addPanel();
+                });
+                
+                function addToItinerary(numberOfItems) {
+                    
+                    $.mobile.changePage("place.html?tripname=" + tripname + "&startDate=" 
+                            + (numberOfItems + 1) + "&tab=0");
+                }
+
+                $('#itinerary').on('pageshow', function (e, data) {
+                    
+                    if (debug_mode) {
+                        console.log("check google maps " + google.maps);
+                    }
+                    if (typeof google.maps === 'undefined') {  
+                        loadScript('http://maps.googleapis.com/maps/api/js?v=3.exp&sensor=false&libraries=places&callback=initialize',
+                            function() { 
+                                if (debug_mode) {
+                                    console.log('google-loader has been loaded, but not the maps-API ');
+                                }
+                        });
+                    }
+                    else {
+                        initialize();
+                    }
+                });
+                
+                function buildListview() {
+                    
+                    $("#tripplacelist").empty();
+                    TripPlace.all().filter("tripname", "=", tripname).order('startDate', true)
+                                .list(null, function (places) {
+                        places.forEach(function(place) {
+                            var content = "<li><a href='place.html?tripname=" +
+                                    $(place).data('tripname') + "&startDate=" +
+                                    $(place).data('startDate') + "&tab=0'>" + 
+                                    $(place).data('description') + 
+                                    "</a><a href='javascript:confirmAndDeletePlace(\"" + 
+                                    $(place).data('description') + "\", \"" +
+                                    $(place).data('startDate') +
+                                    "\")' data-icon='delete'>Delete</a></li>";
+                            $(content).appendTo("#tripplacelist").enhanceWithin();
+                            placesNo++;
+                            $("#tripplacelist").listview("refresh");
+                        });
+                    });
+                }
+
+                function buildKmlForInlineMap() {
+
+                    var cnt = 0;
+                    var tmpLat = 0.0;
+                    var tmpLng = 0.0;
+                    var origin;
+                    var tmpPlaceName;
+                    //var tmpToNextPlace;
+            
+                    // Output all the routes
+                    TripPlace.all().filter("tripname", "=", tripname).order('startDate', true)
+                                .list(null, function (places) {
+
+                        kmlOutput = "<?xml version='1.0' encoding='UTF-8'?>\n<kml xmlns='http://www.opengis.net/kml/2.2'>\n<Document>\n";
+                        places.forEach(function(place) {
+
+                            cnt = cnt + 1;
+                            if (origin === undefined) {
+                               origin = new google.maps.LatLng($(place).data('locationx'), $(place).data('locationy'));
+                            }
+                            kmlLineOutput = "";
+                            kmlStyleOutput = "";
+                            kmlStyleOutput = kmlStyleOutput +
+                                    "<Style id=\"marker" + cnt 
+                                    + "\"><IconStyle>\n<Icon><href>http://www.google.com/mapfiles/marker"
+                                    + String.fromCharCode(64 + cnt) + ".png</href></Icon>\n"
+                                    + "<hotSpot x=\"10\" y=\"0\" xunits=\"pixels\" yunits=\"pixels\"/>\n</IconStyle></Style>\n";
+                            kmlPlmOutput = "<Placemark>\n";
+                            kmlPlmOutput = kmlPlmOutput + "<styleUrl>#marker" + cnt + "</styleUrl>\n";
+                            kmlPlmOutput = kmlPlmOutput + "<name>" + $(place).data('description') + "</name>\n";
+                            kmlPlmOutput = kmlPlmOutput + "<description><![CDATA[<div><p>" 
+                                    + $(place).data('startDate').toString(date_pattern) 
+                                    + "</p><p>" + $(place).data('notes') + "</p>\n"; 
+                            kmlPlmOutput = kmlPlmOutput + "</p></div>]]></description>\n";
+                            kmlPlmOutput = kmlPlmOutput + "<Point>\n<coordinates>"  + $(place).data('locationy') 
+                                    + "," + $(place).data('locationx') + ",0</coordinates>\n</Point>\n";
+
+                            if (cnt > 1) {
+                                kmlLineOutput = "<Placemark>\n";
+                                kmlLineOutput = kmlLineOutput + "<name>From "
+                                    + tmpPlaceName + " to " + $(place).data('description') + "</name>\n";
+                                //kmlLineOutput = kmlLineOutput + "<description><![CDATA[<div><p>" 
+                                //    + tmpToNextPlace + "</p></div>]]></description>\n";
+                                kmlLineOutput = kmlLineOutput + "<LineString>\n<coordinates>\n";  
+                                kmlLineOutput = kmlLineOutput + tmpLat + "," + tmpLng + ",0\n";
+                                kmlLineOutput = kmlLineOutput + $(place).data('locationy') + "," + $(place).data('locationx') + ",0\n";
+                                kmlLineOutput = kmlLineOutput + "</coordinates>\n</LineString>\n";
+                                kmlLineOutput = kmlLineOutput + "<Style><LineStyle>\n";
+                                kmlLineOutput = kmlLineOutput + "<width>5</width>\n";
+                                kmlLineOutput = kmlLineOutput + "<color>ff2dc78d</color>\n";
+                                kmlLineOutput = kmlLineOutput + "</LineStyle></Style>\n";
+                                kmlLineOutput = kmlLineOutput + "</Placemark>\n";
+                            } 
+
+                            tmpLat = $(place).data('locationy');
+                            tmpLng = $(place).data('locationx');
+                            tmpPlaceName = $(place).data('description');
+                            //tmpToNextPlace = $(place).data('toNextPlace');
+
+                            kmlOutput = kmlOutput + kmlStyleOutput + kmlPlmOutput + "</Placemark>\n"
+                                + kmlLineOutput;
+                        });
+                        // Complete the document
+                        kmlOutput = kmlOutput + "</Document>\n</kml>";
+                        var mapOptions = {
+                            zoom: 8,
+                            center: origin
+                        };
+                        map = new google.maps.Map(document.getElementById('map_canvas'), mapOptions);
+                        var myParser = new geoXML3.parser({map: map});
+                        myParser.parseKmlString(kmlOutput);
+                    });
+                    
+                    pictStrArray = {};
+                    pictDataArray = {};
+                    photoCount = 0;
+                    tmpDescr = "";
+                    PlacePicture.all().filter("tripname", "=", tripname)
+                        .filter("selectedImg", "=", "1")
+                            .order('startDate', true)
+                        .forEach(function(picture) {
+                            //the first picture for each place is selected...
+                            if (tmpDescr !== $(picture).data('description')) {
+                                var myfilename = $(picture).data('picture').substr(0, $(picture).data('picture').lastIndexOf('.')) + ".png";
+                                pictStrArray[$(picture).data('description')] = "<img src='images/" + myfilename + 
+                                    "' alt='" + $(picture).data('description') + "' style='max-width: 150px;'>";
+                                if (debug_mode) {
+                                    console.log("pict(" + $(picture).data('description') + "): " + pictStrArray[$(picture).data('description')]);
+                                }
+                                pictDataArray[$(picture).data('picture')] = $(picture).data('pictureUri');
+                                photoCount++;
+                            }
+                            tmpDescr = $(picture).data('description');
+                            if (debug_mode) {
+                                console.log("pict: " + $(picture).data('picture'));
+                            }
+                    }); 
+                }
+                
+                function exportItinerary(where) {
+
+                    var cnt = 0;
+                    var tmpLat = 0.0;
+                    var tmpLng = 0.0;
+                    var tmpPlaceName;
+                    //var tmpToNextPlace;
+
+                    if (gMapsScriptLoaded && window.navigator.onLine) {
+                        
+                        if (placesNo > 0) {
+                            // Output all the routes
+                            if (debug_mode) {
+                                console.log("Exporting itinerary");
+                            }
+                            TripPlace.all().filter("tripname", "=", tripname).order('startDate', true)
+                                        .list(null, function (places) {
+
+                                kmlOutput = "<?xml version='1.0' encoding='UTF-8'?>\n<kml xmlns='http://www.opengis.net/kml/2.2'>\n<Document>\n";
+                                places.forEach(function(place) {
+
+                                    cnt = cnt + 1;
+                                    kmlLineOutput = "";
+                                    kmlStyleOutput = "";
+                                    kmlStyleOutput = kmlStyleOutput +
+                                            "<Style id=\"marker" + cnt 
+                                            + "\"><IconStyle>\n<Icon><href>http://www.google.com/mapfiles/marker"
+                                            + String.fromCharCode(64 + cnt) + ".png</href></Icon>\n"
+                                            + "<hotSpot x=\"10\" y=\"0\" xunits=\"pixels\" yunits=\"pixels\"/>\n</IconStyle></Style>\n";
+                                    kmlPlmOutput = "<Placemark>\n";
+                                    kmlPlmOutput = kmlPlmOutput + "<styleUrl>#marker" + cnt + "</styleUrl>\n";
+                                    kmlPlmOutput = kmlPlmOutput + "<name>" + $(place).data('description') + "</name>\n";
+                                    kmlPlmOutput = kmlPlmOutput + "<description><![CDATA[<div><p>" 
+                                            + $(place).data('startDate').toString(date_pattern) 
+                                            + "</p><p>" + $(place).data('notes') + "</p>\n"; 
+                                    if (pictStrArray.hasOwnProperty($(place).data('description'))) {
+                                        kmlPlmOutput = kmlPlmOutput + "<p>" 
+                                            + pictStrArray[$(place).data('description')]
+                                            + "</p>";
+                                        if (debug_mode) {
+                                            console.log("found picture for " + $(place).data('description'));
+                                        }
+                                    }
+                                    kmlPlmOutput = kmlPlmOutput + "</div>]]></description>\n";
+                                    kmlPlmOutput = kmlPlmOutput + "<Point>\n<coordinates>"  + $(place).data('locationy') 
+                                            + "," + $(place).data('locationx') + ",0</coordinates>\n</Point>\n";
+
+                                    if (cnt > 1) {
+                                        kmlLineOutput = "<Placemark>\n";
+                                        kmlLineOutput = kmlLineOutput + "<name>From "
+                                            + tmpPlaceName + " to " + $(place).data('description') + "</name>\n";
+                                        //kmlLineOutput = kmlLineOutput + "<description><![CDATA[<div><p>" 
+                                        //    + tmpToNextPlace + "</p></div>]]></description>\n";
+                                        kmlLineOutput = kmlLineOutput + "<LineString>\n<coordinates>\n";  
+                                        kmlLineOutput = kmlLineOutput + tmpLat + "," + tmpLng + ",0\n";
+                                        kmlLineOutput = kmlLineOutput + $(place).data('locationy') + "," + $(place).data('locationx') + ",0\n";
+                                        kmlLineOutput = kmlLineOutput + "</coordinates>\n</LineString>\n";
+                                        kmlLineOutput = kmlLineOutput + "<Style><LineStyle>\n";
+                                        kmlLineOutput = kmlLineOutput + "<width>5</width>\n";
+                                        kmlLineOutput = kmlLineOutput + "<color>ff2dc78d</color>\n";
+                                        kmlLineOutput = kmlLineOutput + "</LineStyle></Style>\n";
+                                        kmlLineOutput = kmlLineOutput + "</Placemark>\n";
+                                    } 
+
+                                    tmpLat = $(place).data('locationy');
+                                    tmpLng = $(place).data('locationx');
+                                    tmpPlaceName = $(place).data('description');
+                                    //tmpToNextPlace = $(place).data('toNextPlace');
+
+                                    kmlOutput = kmlOutput + kmlStyleOutput + kmlPlmOutput + "</Placemark>\n"
+                                        + kmlLineOutput;
+                                });
+                                // Complete the document
+                                kmlOutput = kmlOutput + "</Document>\n</kml>";
+                                zip = new JSZip();
+                                zip.file(tripname.replace(/ /g, "") + ".kml", kmlOutput);
+                                zip.folder("images");
+                                loader(photoCount, pictDataArray, loadPhoto, function () {
+                                        if (debug_mode) {
+                                            console.log("generating zip");
+                                        }
+                                        zipcontent = zip.generate({type: "blob"});     
+                                        if (where === 'google') {
+                                            uploadFileGDrive(tripname, tripname.replace(/ /g, "") + ".kmz", zipcontent, 
+                                                "application/vnd.google-earth.kmz");
+                                        }
+                                });
+                            });
+                        }
+                        else {
+                            navigator.notification.alert(
+                                $.i18n.prop("msg_itinerary_empty"),
+                                null, 'JourneyNotes', 'Ok');
+                        }
+                    }
+                    else {
+                        navigator.notification.alert(
+                            $.i18n.prop("msg_not_online"),
+                            null, 'JourneyNotes', 'Ok');
+                    }
+                }
+                
+                // see http://stackoverflow.com/questions/8682085/can-i-sync-up-multiple-image-onload-calls
+                // loader will 'load' items by calling thingToDo for each item,
+                // before calling allDone when all the things to do have been done.
+                function loader(count, items, thingToDo, allDone) {
+                    if (debug_mode) {
+                        console.log("loader started with count = " + count);
+                    }
+                    if (count === 0) {
+                        allDone();
+                    }
+                    // this callback counts down the things to do.
+                    var thingToDoCompleted = function () {
+                        count--;
+                        if (debug_mode) {
+                            console.log("now count = " + count);
+                        }
+                        if (0 === count) {
+                            if (debug_mode) {
+                                console.log("calling allDone");
+                            }
+                            allDone();
+                        }
+                    };
+
+                    for (var fn in items) {
+                        // 'do' each thing, and await callback.
+                        thingToDo(items, fn, thingToDoCompleted);
+                    }
+                }
+
+                function loadPhoto(items, filename, onComplete) {
+
+                    loadImage(
+                        items[filename],
+                        function (img) {
+                            if (img.type === "error") {
+                                if (debug_mode) {
+                                    console.log("Error loading image " + items[filename]);
+                                }
+                                navigator.notification.alert(
+                                    $.i18n.prop("msg_error_generic"),
+                                    null, 'JourneyNotes', 'Ok');
+                            } 
+                            else {
+                                var dataURL = img.toDataURL("image/png");
+                                if (myblob === null) {
+                                    myblob = dataURL;
+                                }
+                                var myfilename = filename.substr(0, filename.lastIndexOf('.')) + ".png";
+                                var prefixRe = new RegExp("^data:image/[^;]+;base64,");
+                                var bStr = dataURL.replace(prefixRe, "");
+                                if (debug_mode) {
+                                    console.log("adding " + myfilename + " to zip, then uploading");
+                                }
+                                zip.file("images/" + myfilename, bStr, {base64: true});
+                                //saving image on google drive
+                                uploadFileGDrive(tripname, myfilename, bStr, "image/png");
+                            }
+                            // notify that we're done.
+                            onComplete();
+                        }, 
+                        { maxWidth: 600, canvas: true }
+                    );
+                }
+                
+                function onConfirmDeletePlace(buttonIndex) {
+                    if (debug_mode) {
+                        console.log('You selected button ' + buttonIndex);
+                    }
+                    if (buttonIndex === 1) {
+                        persistence.transaction(function(tx) {
+                            TripPlace.all().filter("tripname", "=", tripname)
+                                .filter("startDate", "=", startDateToDelete)
+                                .forEach(function(item) {
+
+                                    PlacePicture.all().filter("tripname", "=", tripname)
+                                                .filter("startDate", "=", startDateToDelete)
+                                                .forEach(function(pict) {
+                                        persistence.remove(pict);
+                                    });
+                                    TripExpense.all().filter("tripname", "=", tripname)
+                                                .filter("place", "=", $(item).data('description'))
+                                                .forEach(function(exp) {
+                                        persistence.remove(exp);
+                                    });
+                                    persistence.remove(item);
+                            });
+                            persistence.flush(tx, function(tx1) { 
+                                if (tx1 === undefined || tx1.toString() === "") {
+                                    buildListview();
+                                    buildKmlForInlineMap();
+                                    //buildGoogleMap();
+                                }
+                                else {
+                                    navigator.notification.alert(
+                                        $.i18n.prop("msg_error_generic"),
+                                        null, 'JourneyNotes', 'Ok');
+                                }
+                            });
+                        });
+                    }
+                }
+
+                // Click delete split-button to remove list item
+                function confirmAndDeletePlace( listitem, startDate ) {
+                    
+                    startDateToDelete = startDate;
+                    navigator.notification.confirm(
+                        $.i18n.prop("msg_confirm_delete", listitem), // message
+                        onConfirmDeletePlace,          // callback to invoke with index of button pressed
+                        'JourneyNotes',           // title
+                        [$.i18n.prop("msg_yes"), $.i18n.prop("msg_no")]     // buttonLabels
+                    );
+                }
+                
+                function shareItineraryOnFacebook() {
+
+                    if (gMapsScriptLoaded && window.navigator.onLine) {
+                        
+                        Trip.findBy("name", tripname, function(item) {
+
+                            // to be reviewed
+                            if ($(item).data('exportUrl') === undefined || $(item).data('exportUrl') === "") {
+                                navigator.notification.alert(
+                                    $.i18n.prop("msg_export_itinerary"),
+                                    null, 'JourneyNotes', 'Ok');
+                            }
+                            else {
+                                
+                                window.plugins.socialsharing.shareViaFacebook(
+                                    $(item).data('name') + "\n" + $(item).data('notes'), 
+                                    myblob, 
+                                    $(item).data('exportUrl'), 
+                                    function() {
+                                        if (debug_mode) {
+                                            console.log('share ok');
+                                        }
+                                    }, 
+                                    function(errormsg){
+                                        navigator.notification.alert(
+                                            jQuery.i18n.prop("msg_error", errormsg),
+                                            null, 'JourneyNotes', 'Ok');
+                                    }
+                                );
+                            }
+                        });
+                    }
+                    else {
+                        navigator.notification.alert(
+                            $.i18n.prop("msg_not_online"),
+                            null, 'JourneyNotes', 'Ok');
+                    }
+                }
+                
+                function shareItineraryOnGooglePlus() {
+                    
+                    if (gMapsScriptLoaded && window.navigator.onLine) {
+                        Trip.findBy("name", tripname, function(item) {
+
+                            if ($(item).data('exportUrl') === undefined || $(item).data('exportUrl') === "") {
+                                navigator.notification.alert(
+                                    $.i18n.prop("msg_export_itinerary"),
+                                    null, 'JourneyNotes', 'Ok');
+                            }
+                            else {
+                                getToken(function () {                    
+                                    window.open('https://plus.google.com/share?url=' + 
+                                            $(item).data('exportUrl'), '_blank', 'location=yes');
+                                });
+                            }
+                        });
+                    }
+                    else {
+                        navigator.notification.alert(
+                            $.i18n.prop("msg_not_online"),
+                            null, 'JourneyNotes', 'Ok');
+                    }
+                }
+                
+                function shareItineraryOnTwitter () {
+                    
+                    if (gMapsScriptLoaded && window.navigator.onLine) {
+                        Trip.findBy("name", tripname, function(item) {
+
+                            if ($(item).data('exportUrl') === undefined || $(item).data('exportUrl') === "") {
+                                navigator.notification.alert(
+                                    $.i18n.prop("msg_export_itinerary"),
+                                    null, 'JourneyNotes', 'Ok');
+                            }
+                            else {
+                                window.plugins.socialsharing.shareViaTwitter(
+                                    $(item).data('name') + "\n" + $(item).data('notes'), 
+                                    myblob, 
+                                    $(item).data('exportUrl')
+                                );
+                            }
+                        });
+                    }
+                    else {
+                        navigator.notification.alert(
+                            $.i18n.prop("msg_not_online"),
+                            null, 'JourneyNotes', 'Ok');
+                    }
+                }
+                
+                function sendItineraryByMail() {
+                    
+                    //share here
+                    Trip.findBy("name", tripname, function(item) {
+                        
+                        if ($(item).data('exportUrl') === undefined || $(item).data('exportUrl') === "") {
+                            navigator.notification.alert(
+                                $.i18n.prop("msg_export_itinerary"),
+                                null, 'JourneyNotes', 'Ok');
+                        }
+                        else {
+                            window.plugins.socialsharing.shareViaEmail(
+                                $(item).data('notes') + "\n\n" + $(item).data('exportUrl'),
+                                $(item).data('name'),
+                                null, // TO: must be null or an array
+                                null, // CC: must be null or an array
+                                null, // BCC: must be null or an array
+                                null, // FILES: can be null, a string, or an array
+                                function () { if (debug_mode) { console.log("mail sent"); } }, // called when sharing worked, but also when the user cancelled sharing via email (I've found no way to detect the difference)
+                                function () { if (debug_mode) { console.log("error sending mail"); } } // called when sh*t hits the fan
+                            );
+                        }
+                    });
+                }
+                
+                function gotoCalendar() {
+                    
+                    if (placesNo > 0) {
+                        $.mobile.changePage('calendar.html?tripname=' + tripname, { transition: "slideup", changeHash: false });
+                    }
+                    else {
+                        navigator.notification.alert(
+                            $.i18n.prop("msg_itinerary_empty"),
+                            null, 'JourneyNotes', 'Ok');
+                    }
+                }
+                
+            </script>
+            
+            <div data-role="panel" data-position-fixed="true" id="mypanel" data-theme="b">
+                <!-- panel content goes here -->
+            </div><!-- /panel -->
+            
+            <div id="itinerary-header" data-role="header" data-position="fixed" data-tap-toggle="false" data-theme='b'>
+                <a href="#mypanel" data-ajax="false"><i class='lIcon fa fa-bars'></i></a>
+                <h1 id="itinerary_title"></h1>
+                <div id="itinerary-header-controlgroup" class="ui-btn-right">
+                </div>        
+            </div><!-- /header -->
+
+            <div data-role="content">
+                <div id="map_container" data-role="fieldcontain" data-type="horizontal">
+                </div>
+
+	        <div class='inset'>
+                    
+                    <ul id="tripplacelist" data-role="listview" data-inset="true"></ul>
+
+                    <div data-role="fieldcontain" data-type="horizontal">
+                        <div>
+                            <a href="javascript:exportItinerary('google')">
+                                <img src='themes/images/upload.png' alt='Google drive' height="32" width="32"/>
+                            </a>
+                            &nbsp;
+                            <a href="javascript:gotoCalendar()">
+                                <img src='themes/images/calendar_32.png' alt='Google Calendar' height="32" width="32"/>
+                            </a>
+                            &nbsp;
+                            <a href="javascript:shareItineraryOnGooglePlus()">
+                                <img src="themes/images/gplus-32.png" alt="Google+" height="32" width="32"/>
+                            </a>
+                            &nbsp;
+                            <a href="javascript:shareItineraryOnFacebook()">
+                                <img src='themes/images/fb.jpeg' alt='Facebook' height="32" width="32"/>
+                            </a>
+                            &nbsp;
+                            <a href="javascript:shareItineraryOnTwitter()">
+                                <img src='themes/images/twitter.png' alt='Twitter' height="32" width="32"/>
+                            </a>
+                            &nbsp;
+                            <a href="javascript:sendItineraryByMail()">
+                                <img src='themes/images/gmail.png' alt='Mail' height="32" width="32"/>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                                
+            </div><!-- /content -->
+
+        </div><!-- /page -->
+        
+    </body>
+</html>

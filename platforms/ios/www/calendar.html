@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<!--
+To change this license header, choose License Headers in Project Properties.
+To change this template file, choose Tools | Templates
+and open the template in the editor.
+-->
+<html>
+    <head>
+	<meta charset="utf-8">
+	<title>JourneyNotes</title>
+    </head>
+    <body>
+        <div id="calendar-page" data-role="page">
+            
+            <style scoped>
+                .ui-grid-a .ui-block-a { width: 85%; }
+                .ui-grid-a .ui-block-b { width: 15%; }                 
+            </style>
+            
+            <script type='text/javascript' src='js/fullcalendar/gcal.js'></script>
+            <script type='text/javascript' src='js/fullcalendar/lang-all.js'></script>
+            <script type="text/javascript">
+                
+                var tripname;
+                var gMapsScriptLoaded = false;
+                var events = [];
+                
+                $('#calendar-page').on('pageinit', function (e, data) {
+                    
+                    var startDate = null;
+                    var endDate = null;
+                    var bgColor = null;
+                    
+                    var parameters = $(this).data("url").split("?")[1];
+                    tripname = parameters.replace("tripname=","");  
+                    
+                    $('#calendar_title').empty().append($.i18n.prop("calendar_title"));
+                    $('#sync_header').empty().append($.i18n.prop("sync_header"));
+                    
+                    if (typeof gapi !== 'undefined') {
+                        gMapsScriptLoaded = true;
+                    }
+                    
+                    TripPlace.all().filter("tripname", "=", tripname).order('startDate', true)
+                            .list(null, function (places) {
+                                
+                        places.forEach(function(place) {
+                            
+                            if (startDate === null) {
+                                startDate = $(place).data('startDate');
+                                $('#calendar').fullCalendar({
+                                    // put your options and callbacks here
+                                    defaultDate: startDate,
+                                    lang: localStorage.getItem("mytrip_lang"),
+                                    dayClick: function(date, jsEvent, view) {
+                                        var url = "place.html?tripname=" + tripname + "&startDate=" 
+                                                + new Date(date) + "&tab=0";
+                                        $.mobile.changePage(url);
+                                    },
+                                    eventClick: function(calEvent, jsEvent, view) {
+                                        if (calEvent.textColor === '#FFFFFF') {
+                                            var url = "place.html?tripname=" + tripname + "&startDate=" 
+                                                    + new Date(calEvent.start) + "&tab=0";
+                                            $.mobile.changePage(url);
+                                        }
+                                        else {
+                                            window.open(calEvent.googleref, "_system");
+                                        }
+                                    }
+                                });
+                            }
+                            if (endDate === null || $(place).data('endDate') > endDate) {
+                                endDate = $(place).data('endDate');
+                            }
+                            if ($(place).data('eventId') === null || $(place).data('eventId') === "") {
+                                bgColor = "#0000FF";
+                            }
+                            else {
+                                bgColor = "#00CC66";
+                            }
+                            var event = {
+                                title  : $(place).data('description'),
+                                start  : $(place).data('startDate'),
+                                end    : $(place).data('endDate'),
+                                backgroundColor: bgColor,
+                                textColor: "#FFFFFF"
+                            };
+                            events.push($(place).data('description') + getDateFromField($(place).data('startDate')));
+                            $('#calendar').fullCalendar('renderEvent', event, true);
+                        });
+                        if (gMapsScriptLoaded && navigator.connection.type !== Connection.NONE) {
+                            if (debug_mode) {
+                                console.log("get google calendar evts");
+                            }
+                            getGoogleCalendarEvents(getDateFromField(startDate), getDateFromField(endDate));
+                        }
+                    });
+                    
+                    var cancelLink = "<a id='a_back' href='itinerary.html?tripname=" + tripname
+                             + "' class='ui-btn ui-btn-inner'><i class='lIcon fa fa-backward'></i></a>";
+                    $('#calendar-header-controlgroup').append(cancelLink);
+                    
+                    addPanel();                    
+                });
+                
+                $('#calendar-page').on('pageshow', function (e, data) {
+                    $('#calendar').fullCalendar('render');
+                });
+                
+                function getGoogleCalendarEvents(startDate, endDate) {
+                    
+                    calendarId = localStorage.getItem("mytrip_calendar_id");
+                    if (typeof calendarId !== 'undefined' && calendarId !== null) {
+                        if (debug_mode) {
+                            console.log("calendarId " + calendarId);
+                        }
+                        $.mobile.loading("show", {text: "loading", textVisible: true});
+                        setTimeout(function () {
+                            $.mobile.loading("hide");
+                        }, 5000);
+                        getToken(function () {                    
+                            if (debug_mode) {
+                                console.log("Calendar events between " + startDate.toISOString() + " and " + endDate.toISOString());
+                            }
+                            var request = gapi.client.request({
+                                'path': '/calendar/v3/calendars/' + calendarId + '/events?access_token=' + 
+                                        localStorage.getItem("mytrip_google_access_token"),
+                                'method': 'GET',
+                                'params': {'timeMin': startDate.toISOString(),
+                                           'timeMax': endDate.toISOString()
+                                }
+                            }); 
+                            callback = function(resp) {
+                                if (!resp.error) {
+                                    for (var e in resp.items) {
+                                        if (typeof resp.items[e].location !== 'undefined') {
+                                            var event = resp.items[e];
+                                            if (events.indexOf(event.summary + new Date(event.start.dateTime)) === -1) {
+                                                var calEvent = {
+                                                    title: event.summary,
+                                                    start: event.start.dateTime,
+                                                    end: event.end.dateTime,
+                                                    googleref: event.htmlLink,
+                                                    backgroundColor: "#FFF8DC",
+                                                    textColor: "#000000"
+                                                };
+                                                $('#calendar').fullCalendar('renderEvent', calEvent, true);
+                                            }
+                                        }
+                                    }
+                                }
+                                else {
+                                    navigator.notification.alert(
+                                        $.i18n.prop("msg_error", resp.error.message), 
+                                        null, 'JourneyNotes', 'Ok');
+                                }
+                                $.mobile.loading("hide");
+                            };
+                            request.execute(callback);
+                        });
+                    }
+                    else {
+                        navigator.notification.alert(
+                            $.i18n.prop("msg_no_calendar_selected"), 
+                            null, 'JourneyNotes', 'Ok');
+                    }
+                }
+                
+                function syncEventsOnCalendar() {
+                    if (gMapsScriptLoaded && navigator.connection.type !== Connection.NONE) {
+                        syncCalendarEvents(tripname);
+                    }
+                    else {
+                        navigator.notification.alert(
+                            $.i18n.prop("msg_not_online"), 
+                            null, 'JourneyNotes', 'Ok');
+                    }
+                }
+                
+            </script>
+
+            <div data-role="panel" data-position-fixed="true" id="mypanel" data-theme="b">
+                <!-- panel content goes here -->
+            </div><!-- /panel -->
+            
+            <div id="calendar-header" data-role="header" data-position="fixed" data-tap-toggle="false" data-theme='b'>
+                <a href="#mypanel" data-ajax="false"><i class='lIcon fa fa-bars'></i></a>
+                <h1 id="calendar_title"></h1>
+                <div id="calendar-header-controlgroup" class="ui-btn-right">
+                </div>        
+            </div><!-- /header -->
+
+            <div data-role="content">
+	        <div class='inset'>
+                    <div id='calendar'></div>
+                    
+                    <div data-role="fieldcontain">
+                        <div class="ui-grid-a">
+                            <div class="ui-block-a">
+                                <label id="sync_header" for="sync_btn"></label>
+                            </div>
+                            <div class="ui-block-b">
+                                <!-- load currencies -->
+                                <a id="sync_btn" href="javascript:syncEventsOnCalendar()" class="ui-btn ui-btn-inline ui-corner-all ui-btn-icon-notext ui-icon-refresh" style="margin-top: 0px;">Refresh currencies</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div><!-- /content -->
+            
+        </div>
+    </body>
+</html>

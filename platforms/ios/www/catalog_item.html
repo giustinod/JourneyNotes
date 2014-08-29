@@ -1,0 +1,111 @@
+
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>JourneyNotes</title>
+    </head>
+    <body>
+        <div id="category-item" data-role="page">
+
+            <script type="text/javascript">
+
+                $('#category-item').on('pageinit', function (e, data) {
+
+                    var parameters = $(this).data("url").split("?")[1];
+                    parameter = parameters.split("&")[0].replace("category=","");  
+                    var items = $(this).data("url").split("&")[1];
+                    item = items.replace("item=","");  
+
+                    var itemObj = null;
+
+                    ChecklistCategoryItem.all().filter("description", "=", item)
+                                .list(null, function (items) {
+                        items.forEach(function(item) {
+                            itemObj = item;
+                            $("#description").val($(item).data('description'));
+                            $("#quantity").val($(item).data('quantity'));
+                            $("#notes").val($(item).data('notes'));
+                        });
+                    });
+                    
+                    var saveLink = $("<a href='catalog_items.html?category=" + 
+                            parameter + "' class='ui-btn ui-btn-inner'><i class='lIcon fa fa-save'></i></a>")
+                            .click(function(e) {
+                                persistence.transaction(function(tx) {
+                                    if (itemObj === null)
+                                    {
+                                        itemObj = new ChecklistCategoryItem({categoryname: parameter, 
+                                            description: $("#description").val(),
+                                            quantity: $("#quantity").val(),
+                                            notes: $("#notes").val()}); 
+                                        persistence.add(itemObj);
+                                    }
+                                    else
+                                    {
+                                        $(itemObj).data('description', $("#description").val());
+                                        $(itemObj).data('quantity', $("#quantity").val());
+                                        $(itemObj).data('notes', $("#notes").val());
+                                    }
+                                    persistence.flush(tx, function(tx) {
+                                        if (tx.toString() === "") {
+                                            navigator.notification.alert(
+                                                jQuery.i18n.prop("msg_saved", $("#description").val()),
+                                                null, 'JourneyNotes', 'Ok');
+                                        }
+                                        else {
+                                            navigator.notification.alert(
+                                                jQuery.i18n.prop("msg_error_generic"),
+                                                null, 'JourneyNotes', 'Ok');
+                                        }
+                                    });
+                                });
+                            });
+
+                    $('#checklist_item_title').empty().append(parameter);
+                    $('#label_description').empty().append(jQuery.i18n.prop("label_description"));       
+                    $('#label_quantity').empty().append(jQuery.i18n.prop("label_quantity"));       
+                    $('#label_notes').empty().append(jQuery.i18n.prop("label_notes"));       
+                    
+                    var cancelLink = $("<a id='a_back' href='catalog_items.html?category=" + parameter + "' class='ui-btn ui-btn-inner'><i class='lIcon fa fa-backward'></i></a>");
+                    $('#category-item-controlgroup').append(cancelLink);
+                    $('#category-item-controlgroup').append(saveLink);
+
+                    addPanel();
+                });
+
+            </script>
+            
+            <div data-role="panel" data-position-fixed="true" id="mypanel" data-theme="b">
+                <!-- panel content goes here -->
+            </div><!-- /panel -->
+            
+            <div id="category-item-hd" data-role="header" data-position="fixed" data-tap-toggle="false" data-theme='b'>
+                <a href="#mypanel" data-ajax="false"><i class='lIcon fa fa-bars'></i></a>
+                <h1 id="checklist_item_title"></h1>
+                <div id="category-item-controlgroup" class="ui-btn-right">
+                </div>
+            </div><!-- /header -->
+
+            <div data-role="content">
+	        <div class='inset'>
+
+                    <div data-role="fieldcontain">
+                        <label id="label_description" for="description">Description:</label>
+                        <input type="text" name="description" id="description" value=""  />
+                    </div>
+
+                    <div data-role="fieldcontain">
+                        <label id="label_quantity" for="quantity">Quantity:</label>
+                        <input type="number" name="quantity" id="quantity" value=""  />
+                    </div>
+
+                    <div data-role="fieldcontain">
+                        <label id="label_notes" for="notes">Notes:</label>
+                        <textarea  name="notes" id="notes" ></textarea>
+                    </div>
+                </div>
+            </div><!-- /content -->
+        </div><!-- /page -->
+        
+    </body>
+</html>

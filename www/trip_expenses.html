@@ -1,0 +1,229 @@
+
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>JourneyNotes</title>
+    </head>
+    <body>
+        <div data-role="page" id="trip-expenses">
+            
+            <script type="text/javascript">
+
+                var tripname;
+                var date_pattern;
+                var default_currency;
+                var categoryToDelete;
+                var descrToDelete;
+                var eDateToDelete;
+                
+                $('#trip-expenses').on('pageinit', function (e, data) {
+                    
+                    if (localStorage.getItem("mytrip_default_currency") !== null) {
+                        default_currency = localStorage.getItem("mytrip_default_currency");
+                    }
+                    else {
+                        default_currency = $.i18n.prop("DefaultCurrency");
+                    }
+                    $('#col1-th').empty().append($.i18n.prop("label_date"));
+                    $('#col2-th').empty().append($.i18n.prop("label_description"));
+                    $('#col3-th').empty().append($.i18n.prop("label_place"));
+                    $('#col4-th').empty().append($.i18n.prop("label_payment"));
+                    $('#col5-th').empty().append($.i18n.prop("label_amount", default_currency));
+                        
+                    var parameters = $(this).data("url").split("?")[1];
+                    if (parameters !== undefined) {
+                        tripname = parameters.split("&")[0].replace("tripname=",""); 
+                    }
+                    
+                    navigator.globalization.getDatePattern(
+                        function (date) {
+                            date_pattern = date.pattern;
+                        },
+                        function () {
+                            navigator.notification.alert(
+                                jQuery.i18n.prop("msg_error_date_pattern"),
+                                null, 'JourneyNotes', 'Ok');
+                        },
+                        {formatLength:'short', selector:'date'}
+                    );
+            
+                    buildTable();
+                    
+                    $('#trip_expenses_title').empty().append($.i18n.prop("expenses_header"));
+                    
+                    var cancelLink = "<a id='a_back' href='trip.html?tripname=" + tripname
+                             + "' class='ui-btn ui-btn-inner'><i class='lIcon fa fa-backward'></i></a>";
+                    $('#tripexpenses-header-controlgroup').append(cancelLink);
+                    var addLink = "<a href='trip_expense.html?tripname=" + tripname + 
+                            "' class='ui-btn ui-btn-inner'><i class='lIcon fa fa-plus'></i></a>";
+                    $('#tripexpenses-header-controlgroup').append(addLink);
+                    
+                    addPanel();
+                });
+
+                function buildTable() {
+
+                    var grandtotal = 0;
+                    TripExpense.all().filter("tripname", "=", tripname)
+                            .order("eDate", false)
+                                .list(null, function (items) {
+                        $("#expenses-table > tbody").empty();
+                        items.forEach(function(item) {
+                            var content = "";
+                            var mydate = null;
+                            if (typeof $(item).data('eDate') === 'string') {
+                                mydate = new Date($(item).data('eDate')).toString(date_pattern);
+                            }
+                            else {
+                                mydate = $(item).data('eDate').toString(date_pattern);
+                            }
+                            content = content 
+                                + "<tr><td><a href='javascript:confirmAndDelete(\""
+                                + tripname + "\", \"" + $(item).data('expcategory')
+                                + "\", \"" + $(item).data('description')
+                                + "\", \"" + $(item).data('eDate')
+                                + "\")' class='ui-btn ui-icon-delete ui-btn-icon-notext ui-corner-all'>Delete</a></td>"
+                                + "<td><a href='trip_expense.html?tripname="
+                                + tripname + "&expcategory=" + $(item).data('expcategory')
+                                + "&description=" + $(item).data('description') + "&eDate=" 
+                                + $(item).data('eDate') + "' >" 
+                                + $(item).data('description') + "</a></td>" 
+                                + "<td>" + mydate + "</td>"
+                                + "<td style='text-align:left;'>" + $(item).data('place') + "</td>"
+                                + "<td style='text-align:left;'>" + $(item).data('expcategory') + "</td>"
+                                + "<td style='text-align:right;'>" + $(item).data('amount') + "</td>";
+                            $("#expenses-table > tbody").append(content);
+                            grandtotal = grandtotal + $(item).data('amount');
+                        });
+                        var lastrow = "<tr><td>&nbsp;</td><td style='font-weight:bold;'>"
+                                + $.i18n.prop("Total") + "</td>"
+                                + "<td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td>"
+                                + "<td style='text-align:right; font-weight:bold;'>" 
+                                + grandtotal.toPrecision(4) + "</td></tr>";
+                        $("#expenses-table > tbody").append(lastrow);
+                        $("#expenses-table").table("refresh");
+                    });
+                }
+
+                function onConfirmDelete(buttonIndex) {
+                    if (debug_mode) {
+                        console.log('You selected button ' + buttonIndex);
+                    }
+                    if (buttonIndex === 1) {
+                        TripExpense.all()
+                            .filter("tripname", "=", tripname)
+                            .filter("expcategory", "=", categoryToDelete)
+                            .filter("description", "=", descrToDelete)
+                            .filter("eDate", "=", eDateToDelete)
+                            .forEach(function(item) {
+                                persistence.remove(item);
+                                persistence.flush(function(tx) { 
+                                    if (tx === undefined || tx.toString() === "") {
+                                        buildTable();
+                                    }
+                                    else {
+                                        navigator.notification.alert(
+                                            jQuery.i18n.prop("msg_error_generic"),
+                                            null, 'JourneyNotes', 'Ok');
+                                    }
+                                });
+                        });
+                    }
+                }
+                
+                // Click delete split-button to remove list item
+                function confirmAndDelete( trip, category, descr, edate ) {
+                    
+                    descrToDelete = descr;
+                    categoryToDelete = category;
+                    eDateToDelete = edate;
+                    
+                    navigator.notification.confirm(
+                        $.i18n.prop("msg_confirm_delete", descr), // message
+                        onConfirmDelete,          // callback to invoke with index of button pressed
+                        'JourneyNotes',           // title
+                        [$.i18n.prop("msg_yes"), $.i18n.prop("msg_no")]     // buttonLabels
+                    );
+                }
+
+                // export
+                function exportExpenses(where) {
+                    
+                    var delim = "\r\n";
+                    var csvContent = $.i18n.prop("label_date") + "," +
+                            $.i18n.prop("label_description") + "," +
+                            $.i18n.prop("label_place") + "," +
+                            $.i18n.prop("label_payment") + "," +
+                            $.i18n.prop("label_amount", default_currency) + delim;
+
+                    TripExpense.all().filter("tripname", "=", tripname)
+                            .order("eDate", false)
+                                .list(null, function (items) {
+                        items.forEach(function(item) {
+                            var mydate = null;
+                            if (typeof $(item).data('eDate') === 'string') {
+                                mydate = new Date($(item).data('eDate')).toString(date_pattern);
+                            }
+                            else {
+                                mydate = $(item).data('eDate').toString(date_pattern);
+                            }
+                            csvContent = csvContent 
+                                + mydate + ","
+                                + $(item).data('description') + "," 
+                                + $(item).data('place') + "," 
+                                + $(item).data('expcategory') + ","
+                                + "\""+ $(item).data('amount').formatMoney(2, "", 
+                                    $.i18n.prop("thousand_separator"), $.i18n.prop("decimal_separator")) + "\"" + delim;
+                            if (debug_mode) {
+                                console.log("row: " + csvContent);
+                            }
+                        });                        
+                        if (where === 'google') {
+                            createSpreadsheetFromContent(tripname + '-expenses', csvContent, 'text/csv');
+                        }
+                    });
+                }
+                
+            </script>
+            
+            <div data-role="panel" data-position-fixed="true" id="mypanel" data-theme="b">
+                <!-- panel content goes here -->
+            </div><!-- /panel -->
+            
+            <div id="expenses-header" data-role="header" data-position="fixed" data-tap-toggle="false" data-theme='b'>
+                <a href="#mypanel" data-ajax="false"><i class='lIcon fa fa-bars'></i></a>
+                <h1 id="trip_expenses_title"></h1>
+                <div id="tripexpenses-header-controlgroup" class="ui-btn-right">
+                </div>
+            </div><!-- /header -->
+            
+            <div data-role="content">
+	        <div class='inset'>
+                
+                    <table data-role="table" id="expenses-table" data-mode="columntoggle" class="ui-responsive table-stroke" >
+                        <thead>
+                            <tr>
+                                <th>&nbsp;</th>
+                                <th id="col2-th">Description</th>
+                                <th data-priority="1" id="col1-th">Date</th>
+                                <th data-priority="2" id="col3-th">Place</th>
+                                <th data-priority="3" id="col4-th">Category</th>
+                                <th data-priority="1" id="col5-th">Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        </tbody>
+                    </table>
+
+                    <div class="ui-field-contain">
+                        <div>
+                            <a href="javascript:exportExpenses('google')">
+                                <img src='themes/images/upload.png' alt='Google drive' height="32" width="32"/>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div><!-- /content -->
+        </div><!-- /page -->
+    </body>
+</html>

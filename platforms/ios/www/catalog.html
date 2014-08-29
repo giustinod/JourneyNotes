@@ -1,0 +1,136 @@
+
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>JourneyNotes</title>
+    </head>
+    <body>
+        <div id="category-list" data-role="page">
+
+            <style scoped>
+                .ui-grid-b .ui-block-a { width: 35%; }
+                .ui-grid-b .ui-block-b { width: 50%; }                 
+                .ui-grid-b .ui-block-c { width: 15%; }                 
+            </style>
+            
+            <script type="text/javascript">
+                
+                var itemToDelete;
+                
+                $('#category-list').on('pageinit', function (e, data) {
+                    
+                    $('#checklist_title').empty().append(jQuery.i18n.prop("checklist_title"));
+                    $('#catalog_sub_header').empty().append(jQuery.i18n.prop("catalog_sub_header"));
+                    buildListView();
+                    addPanel();
+                });
+                
+                function buildListView() {
+                    
+                    $("#categorieslist").empty();
+                    ChecklistCategory.all().forEach(function(item) {
+                        
+                        ChecklistCategoryItem.all().filter("categoryname", "=", $(item).data('name'))
+                                    .count(null, function (numOfItems) {
+
+                            var msg = "<li><a href='catalog_items.html?category="
+                                    + $(item).data('name') + "'>" 
+                                    + $(item).data('name')
+                                    + " <span class='ui-li-count'>" 
+                                    + numOfItems + "</span>"
+                                    + "</a><a href='javascript:confirmAndDelete(\""
+                                    + $(item).data('name')
+                                    + "\");' class='delete'>Delete</a></li>";
+                            document.querySelector('#categorieslist').innerHTML += msg;
+                            $("#categorieslist").listview("refresh");
+                        });
+                    });
+                }
+                    
+                function onConfirmDelete(buttonIndex) {
+                    if (debug_mode) {
+                        console.log('You selected button ' + buttonIndex);
+                    }
+                    if (buttonIndex === 1) {
+                        persistence.transaction(function(tx) {
+                            ChecklistCategory.findBy(tx, "name", itemToDelete, function(cat) {
+                                persistence.remove(cat);
+                                ChecklistCategoryItem.all().filter("categoryname", "=", itemToDelete)
+                                        .forEach(null, function(item) {
+                                    persistence.remove(item);
+                                });
+                                persistence.flush(tx, function(tx) { 
+                                    if (tx === undefined || tx.toString() === "") {
+                                        buildListView();
+                                    }
+                                    else {
+                                        navigator.notification.alert(
+                                            jQuery.i18n.prop("msg_error_generic"),
+                                            null, 'JourneyNotes', 'Ok');
+                                    }
+                                });
+                            });
+                        });
+                    }
+                }
+
+                // Click delete split-button to remove list item
+                function confirmAndDelete( listitem ) {
+                    itemToDelete = listitem;
+                    navigator.notification.confirm(
+                        $.i18n.prop("msg_confirm_delete", listitem), // message
+                        onConfirmDelete,          // callback to invoke with index of button pressed
+                        'JourneyNotes',           // title
+                        [$.i18n.prop("msg_yes"), $.i18n.prop("msg_no")]     // buttonLabels
+                    );
+                }
+                
+                function addAndRefresh() {
+                    
+                    if ($("#category_name").val() !== "") {
+                        var cat = new ChecklistCategory({name: $("#category_name").val()});
+                        if (debug_mode) {
+                            console.log("inserting " + cat);
+                        }
+                        persistence.add(cat);
+                    }
+                    buildListView();
+                    $("#category_name").val("");
+                }
+                
+            </script>
+            
+            <div data-role="panel" data-position-fixed="true" id="mypanel" data-theme="b">
+                <!-- panel content goes here -->
+            </div><!-- /panel -->
+            
+            <div id="catalog-header" data-role="header" data-position="fixed" data-tap-toggle="false" data-theme='b'>
+                <a href="#mypanel" data-ajax="false"><i class='lIcon fa fa-bars'></i></a>
+                <h1 id="checklist_title"></h1>
+            </div><!-- /header -->
+
+            <div data-role="content">
+	        <div class='inset'>
+
+                    <div class="ui-grid-b">
+                        <div class="ui-block-a">
+                            <label id="catalog_sub_header" for="category_name" style="margin-top: 15px;"></label>
+                        </div>
+                        <div class="ui-block-b">
+                            <!-- this field causes a bad rendering -->
+                            <input type="text" name="category_name" id="category_name" style="margin-top: 5px;"/>
+                        </div>
+                        <div class="ui-block-c">
+                            <a id="add_btn" href="javascript:addAndRefresh()" class="ui-btn ui-btn-inline ui-mini ui-corner-all ui-btn-icon-notext ui-icon-plus" style="margin-top: 15px;"></a>
+                        </div>
+                    </div>
+                        
+                    <ul id="categorieslist" data-role="listview" data-filter="false" data-inset="true" data-split-icon="delete">
+                    </ul>
+                   
+                </div>
+            </div><!-- /content -->
+        </div><!-- /page -->
+        
+    </body>
+</html>

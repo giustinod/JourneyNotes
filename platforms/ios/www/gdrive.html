@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>JourneyNotes</title>
+    </head>
+    <body>
+        <div id="gdrive" data-role="page">
+
+            <script type="text/javascript">
+                
+                var dumpText;
+                
+                $('#gdrive').on('pageinit', function (e, data) {
+                    
+                    $('#gdrive_title').empty().append($.i18n.prop("gdrive_title"));                    
+                    var cancelLink = $("<a id='a_cancel' href='settings.html' class='ui-btn ui-btn-inner'><i class='lIcon fa fa-backward'></i></a>");
+                    $('#gdrive-controlgroup').append(cancelLink);
+                    
+                    if (typeof gapi !== 'undefined') {
+                        if (debug_mode) {
+                            console.log("retrieving files...");
+                        }
+                        retrieveFiles("title = 'mytrip-localdb.dump' and trashed = false", buildListView);
+                    }
+                    addPanel();
+                });
+                    
+                function buildListView(response) {
+                    
+                    var sDate = new Date();
+                    $("#filelist").empty();
+                    for (var idx in response.items) {
+                        sDate.setISO8601(response.items[idx].modifiedDate);                    
+                        var msg = "<li><a href='javascript:restore(\""
+                                + response.items[idx].downloadUrl + "\")'>" + response.items[idx].title 
+                                + " (" + parseFloat(response.items[idx].fileSize / 1024).toFixed(2)
+                                + " kb) " + $.i18n.prop("modified") + " " + sDate.toString('dd-MMM-yyyy')
+                                + "</a></li>";
+                        document.querySelector('#filelist').innerHTML += msg;
+                        $("#filelist").listview("refresh");
+                    };
+                }
+                    
+                function restore(url) {
+                    if (debug_mode) {
+                        console.log("downloading " + url);
+                    }
+                    downloadFile(url, restoreLocalDatabase);
+                }
+                
+                function onConfirmRestore(buttonIndex) {
+                    if (debug_mode) {
+                        console.log('You selected button ' + buttonIndex);
+                    }
+                    if (buttonIndex === 1) {
+                        $.mobile.loading("show", {text: "restoring", textVisible: true});
+                        persistence.reset(function() {
+                            persistence.schemaSync(function() {
+                                persistence.loadFromJson(null, dumpText, function() {
+                                    $.mobile.loading("hide");
+                                    setTimeout(function () {
+                                        navigator.notification.alert($.i18n.prop("msg_restore_ok"), null, 'JourneyNotes', 'Ok');
+                                    }, 1000);
+                                });               
+                            });               
+                        });               
+                    }
+                    else {
+                        $.mobile.loading("show", {text: "restoring", textVisible: true});
+                        persistence.loadFromJson(null, dumpText, function() {
+                            $.mobile.loading("hide");
+                            setTimeout(function () {
+                                navigator.notification.alert($.i18n.prop("msg_restore_ok"), null, 'JourneyNotes', 'Ok');
+                            }, 1000);
+                        });               
+                    }
+                }
+                
+                function restoreLocalDatabase(content) {
+                    dumpText = content;
+                    if (debug_mode) {
+                        console.log("dumpText " + dumpText);
+                    }
+                    navigator.notification.confirm(
+                        $.i18n.prop("msg_confirm_reset"), // message
+                        onConfirmRestore,          // callback to invoke with index of button pressed
+                        'JourneyNotes',           // title
+                        [$.i18n.prop("msg_yes"), $.i18n.prop("msg_no")]     // buttonLabels
+                    );
+                }
+            </script>
+            
+            <div data-role="panel" data-position-fixed="true" id="mypanel" data-theme="b">
+                <!-- panel content goes here -->
+            </div><!-- /panel -->
+            
+            <div id="header" data-role="header" data-position="fixed" data-tap-toggle="false" data-theme='b'>
+                <a href="#mypanel" data-ajax="false"><i class='lIcon fa fa-bars'></i></a>
+                <h1 id="gdrive_title"></h1>
+                <div id="gdrive-controlgroup" class="ui-btn-right">
+                </div>
+            </div><!-- /header -->
+
+            <div data-role="content">
+	        <div class='inset'>
+                    <ul id="filelist" data-role="listview" data-inset="true" data-filter="true">                    
+                    </ul><!-- /listview -->    
+                </div>
+            </div><!-- /content -->
+        </div><!-- /page -->
+        
+    </body>
+</html>

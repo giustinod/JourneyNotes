@@ -1,0 +1,217 @@
+
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>JourneyNotes</title>
+    </head>
+    <body>
+        <div id="expenses-settings" data-role="page">
+
+            <style scoped>
+                .ui-grid-a .ui-block-a { width: 85%; }
+                .ui-grid-a .ui-block-b { width: 15%; }                 
+                
+                .ui-grid-b .ui-block-a { width: 35%; }
+                .ui-grid-b .ui-block-b { width: 50%; }                 
+                .ui-grid-b .ui-block-c { width: 15%; }                 
+            </style>
+            
+            <script type="text/javascript">
+                
+                var default_currency;
+                var last_upd_currencies = null;
+                var itemToDelete;
+
+                $('#expenses-settings').on('pageinit', function (e, data) {
+                    
+                    if (localStorage.getItem("mytrip_default_currency") !== null) {
+                        default_currency = localStorage.getItem("mytrip_default_currency");
+                    }
+                    else {
+                        default_currency = $.i18n.prop("DefaultCurrency");
+                    }
+                    
+                    if (localStorage.getItem("mytrip_last_upd_currencies") !== null) {
+                        last_upd_currencies = localStorage.getItem("mytrip_last_upd_currencies");
+                    }
+                    
+                    buildCurrencyList();
+                    buildListview();
+                    
+                    $('#expenses_settings_title').empty().append($.i18n.prop("expenses_settings_title"));
+                    $('#payments_header').empty().append($.i18n.prop("payments_header"));
+                    $('#rates_header').empty().append($.i18n.prop("rates_header"));
+                    $('#label_default_currency').empty().append($.i18n.prop("label_currency"));
+                    
+                    addPanel();
+                });
+                
+                function buildCurrencyList() {
+                    
+                    $("#list_of_currencies").empty();
+                    Currency.all().list(null, function (items) {
+                        items.forEach(function(item) {
+                            var option = "<option value='" + $(item).data('currency') + "'>"
+                                + $(item).data('currency') + " - " + $(item).data('description') 
+                                + "</option>";
+                            if (debug_mode) {
+                                console.log("opt: " + option);
+                            }
+                            $('#list_of_currencies').append(option);
+                        });
+                        $("#list_of_currencies").val(default_currency);
+                        $('#list_of_currencies').selectmenu("refresh");
+                    });
+                }
+
+                function buildListview() {
+                    $("#pm-list").empty();
+                    PaymentMethod.all()
+                            .order("expcategory", true)
+                                .list(null, function (items) {
+                        items.forEach(function(item) {
+                            var content = "<li data-icon='delete'><a href='javascript:confirmAndDelete(\""
+                                + $(item).data('expcategory')
+                                + "\");'>" + $(item).data('expcategory')
+                                + "</a></li>";
+                            document.querySelector('#pm-list').innerHTML += content;
+                        });
+                        $("#pm-list").listview("refresh");
+                    });
+                }
+                
+                function onConfirmDelete(buttonIndex) {
+                    if (debug_mode) {
+                        console.log('You selected button ' + buttonIndex);
+                    }
+                    if (buttonIndex === 1) {
+                        PaymentMethod.all().filter("expcategory", "=", itemToDelete)
+                                .forEach(function(item) {
+                            persistence.transaction(function(tx) {
+                                persistence.remove(item);
+                                persistence.flush(tx, function(tx) { 
+                                    if (tx === undefined || tx.toString() === "") {
+                                        buildListview();
+                                    }
+                                    else {
+                                        navigator.notification.alert($.i18n.prop("msg_error_generic"), null, 'JourneyNotes', 'Ok');
+                                    }
+                                });
+                            });
+                        });
+                    }
+                }
+
+                // Click delete split-button to remove list item
+                function confirmAndDelete( listitem ) {
+                    
+                    itemToDelete = listitem;
+                    
+                    navigator.notification.confirm(
+                        $.i18n.prop("msg_confirm_delete", listitem), // message
+                        onConfirmDelete,          // callback to invoke with index of button pressed
+                        'JourneyNotes',           // title
+                        [$.i18n.prop("msg_yes"), $.i18n.prop("msg_no")]     // buttonLabels
+                    );
+                }
+                
+                function addAndRefresh() {
+                    
+                    if ($("#expcategory").val() !== "") {
+                        var pm = new PaymentMethod({expcategory: $("#expcategory").val()});
+                        if (debug_mode) {
+                            console.log("inserting " + pm);
+                        }
+                        persistence.add(pm);
+                    }
+                    buildListview();
+                    $("#expcategory").val("");
+                }
+                
+                function setDefaultCurrency() {
+                    default_currency = $("#list_of_currencies").val();
+                    localStorage.setItem("mytrip_default_currency", default_currency);
+                }
+                
+                function refreshCurrencies() {
+                    
+                    var today = new Date();
+                    var diff = 60*60*24 + 1;
+                    if (typeof last_upd_currencies !== 'undefined' && last_upd_currencies !== null) {
+                        diff = today.getTime()/1000 - last_upd_currencies;
+                    }
+                    if (debug_mode) {
+                        console.log ("diff " + diff);
+                    }
+                    if (diff > 60*60*24) {
+                        loadCurrencies(function () {
+                            localStorage.setItem("mytrip_last_upd_currencies", new Date().getTime());
+                            navigator.notification.alert($.i18n.prop("msg_refresh"), buildCurrencyList, 'JourneyNotes', 'Ok');
+                        });
+                    }
+                    else {
+                        navigator.notification.alert($.i18n.prop("msg_currencies_refreh_denied"), null, 'JourneyNotes', 'Ok');
+                    }
+                }
+                
+            </script>
+            
+            <div data-role="panel" data-position-fixed="true" id="mypanel" data-theme="b">
+                <!-- panel content goes here -->
+            </div><!-- /panel -->
+            
+            <div id="expenses-settings-header" data-role="header" data-position="fixed" data-tap-toggle="false" data-theme='b'>
+                <a href="#mypanel" data-ajax="false"><i class='lIcon fa fa-bars'></i></a>
+                <h1 id="expenses_settings_title"></h1>
+            </div><!-- /header -->
+            
+            <div data-role="content">
+	        <div class='inset'>
+                    
+                    <div data-role="fieldcontain">
+                        <div class="ui-grid-b">
+                            <div class="ui-block-a">
+                                <label id="label_default_currency" for="list_of_currencies" style="margin-top: 20px;"></label>
+                            </div>
+                            <div class="ui-block-b">
+                                <select name="list_of_currencies" id="list_of_currencies" style="margin-top: 10px;">
+                                </select>
+                            </div>
+                            <div class="ui-block-c">
+                                <a id="btn_set_default_curr" href="javascript:setDefaultCurrency()" class="ui-btn ui-btn-inline ui-corner-all ui-btn-icon-notext ui-icon-check" style="margin-top: 15px;">Set Currency</a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="ui-grid-b">
+                        <div class="ui-block-a">
+                            <label id="payments_header" for="expcategory"></label>
+                        </div>
+                        <div class="ui-block-b">
+                            <input type="text" name="expcategory" id="expcategory" style="margin-top: 10px;" />
+                        </div>
+                        <div class="ui-block-c">
+                            <a id="add_btn" href="javascript:addAndRefresh()" class="ui-btn ui-btn-inline ui-mini ui-corner-all ui-btn-icon-notext ui-icon-plus" style="margin-top: 15px;">Add</a>
+                        </div>
+                    </div>
+
+                    <ul id="pm-list" data-role="listview" data-filter="false" data-inset="true">
+                    </ul><!-- /listview -->
+
+                    <div data-role="fieldcontain">
+                        <div class="ui-grid-a">
+                            <div class="ui-block-a">
+                                <label id="rates_header" for="rates_btn"></label>
+                            </div>
+                            <div class="ui-block-b">
+                                <!-- load currencies -->
+                                <a id="rates_btn" href="javascript:refreshCurrencies()" class="ui-btn ui-btn-inline ui-corner-all ui-btn-icon-notext ui-icon-refresh" style="margin-top: 0px;">Refresh currencies</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div><!-- /content -->
+        </div><!-- /page -->
+        
+    </body>
+</html>

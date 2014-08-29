@@ -1,0 +1,61 @@
+
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>JourneyNotes</title>
+    </head>
+    <body>
+        <div id="about-page" data-role="page">
+
+            <script>
+                $('#about-page').on('pageinit', function (e, data) {
+                    
+                    $('#about_title').empty().append($.i18n.prop("features_header"));
+                    $('#credits_title').empty().append($.i18n.prop("header"));
+                    $('#about_todo').empty().append($.i18n.prop("about_todo"));
+                    $('#txt_todo_list').empty().append($.i18n.prop("txt_todo_list"));
+                    $('#about_bugs').empty().append($.i18n.prop("about_bugs"));
+                    $('#about_issues').empty().append($.i18n.prop("about_issues"));
+                    $('#txt_issues_list').empty().append($.i18n.prop("txt_issues_list"));
+                    $('#guide_support').empty().append($.i18n.prop("guide_support"));
+                    addPanel();
+                });
+            </script>
+            
+            <div data-role="panel" data-position-fixed="true" id="mypanel" data-theme="b">
+                <!-- panel content goes here -->
+            </div><!-- /panel -->
+            
+            <div id="header" data-role="header" data-position="fixed" data-tap-toggle="false" data-theme='b'>
+                <a href="#mypanel" data-ajax="false"><i class='lIcon fa fa-bars'></i></a>
+                <h1 id="about_title"></h1>
+            </div><!-- /header -->
+
+            <div data-role="content">
+	        <div class='inset'>
+                    <h3 id="credits_title"></h3>
+                    <ul>
+                    </ul>
+                    <h3 id="about_todo"></h3>
+                    <ul id="txt_todo_list"></ul>
+                    <h3 id="about_bugs"></h3>
+                    <ul>
+                    </ul>
+                    <h3 id="about_issues"></h3>
+                    <ul id="txt_issues_list"></ul>
+                    <div>
+                        <span id="guide_support"></span>  
+                        <span>
+                            <a href="#" onclick="showWebsite('https://sites.google.com/site/journeynoteswiki/')">
+                                JourneyNotes wiki
+                            </a>
+                        </span>
+                    </div>
+                    <div align="center">
+                        <p>Copyright © dotg, 2014</p>
+                    </div>
+                </div>
+            </div><!-- /content -->
+        </div><!-- /page -->
+    </body>
+</html>

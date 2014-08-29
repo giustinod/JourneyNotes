@@ -1,0 +1,281 @@
+
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>JourneyNotes</title>
+    </head>
+    <body>
+        <div id="trip-expense" data-role="page">
+
+            <style scoped>
+                //.eur {background: url(themes/flags/flags/32/Italy.png) 5px 50% no-repeat; padding: 3px 0 3px 35px; font-size: 16px;}
+            </style>
+            
+            <script type="text/javascript">
+                
+                var default_currency;
+                var date_pattern;
+                var myplace;
+                var itemObj = null;
+                
+                $('#trip-expense').on('pageinit', function (e, data) {
+
+                    var parameters = $(this).data("url").split("?")[1];
+                    tripname = parameters.split("&")[0].replace("tripname=","");  
+                    if (localStorage.getItem("mytrip_default_currency") !== null) {
+                        default_currency = localStorage.getItem("mytrip_default_currency");
+                    }
+                    else {
+                        default_currency = $.i18n.prop("DefaultCurrency");
+                    }
+
+                    navigator.globalization.getDatePattern(
+                        function (date) {
+                            date_pattern = date.pattern;
+                        },
+                        function () {
+                            navigator.notification.alert(
+                                jQuery.i18n.prop("msg_error_date_pattern"),
+                                function () {
+                                    $.mobile.changePage("trip_expenses.html?tripname=" + tripname);
+                                }, 'JourneyNotes', 'Ok');
+                        },
+                        {formatLength:'full', selector:'date'}
+                    );
+              
+                    Currency.all().list(null, function (items) {
+                        items.forEach(function(item) {
+                            var option = "<option value='" + $(item).data('currency') 
+                                + "'>"
+                                //+ "' class='eur'>"
+                                + $(item).data('currency') + " - " + $(item).data('description') 
+                                + "</option>";
+                            $('#convertfrom').append(option);
+                        });
+                        $("#convertfrom").val(default_currency);
+                        $('#convertfrom').selectmenu("refresh");
+                    });
+                    
+                    PaymentMethod.all().order("expcategory", true)
+                            .list(null, function (items) {
+                        items.forEach(function(item) {
+                            $('#expcategory').append("<option value='" 
+                                + $(item).data('expcategory') + "'>"
+                                + $(item).data('expcategory') + "</option>");
+                        });
+                        $('#expcategory').selectmenu("refresh");
+                    });
+                    
+                    if (parameters.split("&")[1] !== undefined) {
+                        expcategory = parameters.split("&")[1].replace("expcategory=","");  
+                        description = parameters.split("&")[2].replace("description=","");  
+                        eDate = parameters.split("&")[3].replace("eDate=","");  
+
+                        TripExpense.all().filter("tripname", "=", tripname)
+                                .filter("expcategory", "=", expcategory)
+                                .filter("description", "=", description)
+                                .filter("eDate", "=", eDate)
+                            .forEach(function(item) {
+                                
+                                itemObj = item;
+                                $("#expcategory").val($(item).data('expcategory'));
+                                $('#expcategory').selectmenu("refresh");
+                                $("#description").val($(item).data('description'));
+                                $("#eDate").val($(item).data('eDate').toString('yyyy-MM-ddThh:mm'));
+                                $("#amount").val($(item).data('amount'));
+                                $("#notes").val($(item).data('notes'));
+                            });
+                    }
+                    
+                    $('#trip_expense_title').empty().append($.i18n.prop("trip_expense_title"));
+
+                    var cancelLink = "<a id='a_back' href='trip_expenses.html?tripname=" + tripname
+                             + "' class='ui-btn ui-btn-inner'><i class='lIcon fa fa-backward'></i></a>";
+                    $('#tripexpense-header-controlgroup').append(cancelLink);
+        
+                    var saveLink = $("<a href='#' class='ui-btn ui-btn-inner'><i class='lIcon fa fa-save'></i></a></div>")
+                            .click(function(e) {
+                                if ($("#expcategory").val() === "" || $("#description").val() === "" || $("#eDate").val() === "") {
+                                    navigator.notification.alert(
+                                        jQuery.i18n.prop("msg_missing_desc_or_date"),
+                                        null, 'JourneyNotes', 'Ok');
+                                }
+                                else
+                                {
+                                    $.when(findPlace()).then(
+                                        function () {
+                                            saveExpense();
+                                        },
+                                        function () {
+                                            navigator.notification.alert(
+                                                jQuery.i18n.prop("msg_no_place_found"),
+                                                null, 'JourneyNotes', 'Ok');
+                                            e.preventDefault();
+                                        });
+                                }
+                            });
+
+                    $('#tripexpense-header-controlgroup').append(saveLink);
+                    
+                    $('#label_date').empty().append($.i18n.prop("label_date"));                    
+                    $('#label_place').empty().append($.i18n.prop("label_place"));                    
+                    $('#label_description').empty().append($.i18n.prop("label_description"));                    
+                    $('#label_payment').empty().append($.i18n.prop("label_payment"));                    
+                    $('#label_amount').empty().append($.i18n.prop("label_amount", default_currency));                    
+                    $('#label_currency').empty().append($.i18n.prop("label_currency"));                    
+                    $('#label_notes').empty().append($.i18n.prop("label_notes"));                    
+                    $('#btn_convert').empty().append($.i18n.prop("convert"));                    
+                    
+                    addPanel();
+                });
+                
+                function findPlace () {
+                    
+                    var dfd = $.Deferred();
+                    myplace = null;
+                    TripPlace.all().filter("tripname", "=", tripname)
+                        .filter("startDate", "<=", $("#eDate").val())
+                        .filter("endDate", ">=", $("#eDate").val())
+                        .order("startDate", true).limit(1)
+                        .list(null, function (places) {
+                            places.forEach(function(item) {
+                                myplace = $(item).data('description');
+                                dfd.resolve();
+                        });
+                        if (myplace === null) {
+                            dfd.reject();
+                        }
+                    });
+                    return dfd.promise();
+                }
+                
+                function saveExpense () {
+                    
+                    if (debug_mode) {
+                        console.log("saving expense: " + itemObj);
+                    }
+                    persistence.transaction(function(t) {
+                        if (itemObj === null)
+                        {
+                            itemObj = new TripExpense({tripname: tripname,
+                                expcategory: $("#expcategory").val(),
+                                description: $("#description").val(),
+                                eDate: $("#eDate").val(),
+                                place: myplace,
+                                amount: parseFloat($("#amount").val()),
+                                notes: $("#notes").val()}); 
+                            persistence.add(itemObj);
+                        }
+                        else
+                        {
+                            $(itemObj).data('expcategory', $("#expcategory").val());
+                            $(itemObj).data('description', $("#description").val());
+                            $(itemObj).data('place', myplace);
+                            $(itemObj).data('eDate', $("#eDate").val());
+                            $(itemObj).data('amount', parseFloat($("#amount").val()));
+                            $(itemObj).data('notes', $("#notes").val());
+                        }
+                        persistence.flush(t, function(tx) {
+                            if (typeof tx === 'undefined' || tx.toString() === "") {
+                                navigator.notification.alert(
+                                    jQuery.i18n.prop("msg_saved", $("#description").val()),
+                                    function () {
+                                        $.mobile.changePage("trip_expenses.html?tripname=" + tripname);
+                                    }, 'JourneyNotes', 'Ok');
+                            }
+                            else {
+                                navigator.notification.alert(
+                                    jQuery.i18n.prop("msg_error_generic"),
+                                    null, 'JourneyNotes', 'Ok');
+                            }
+                        });
+                    });
+                }
+
+                function convertCurrency() {
+                    
+                    fromCur = $("#convertfrom").val();
+                    toCur = default_currency;
+                    amount = $("#amount").val();
+                    rateFrom = 1;
+                    rateTo = 1;
+                    //...
+                    Currency.all().filter("currency", "=", fromCur)
+                        .forEach(function(item) {
+                            rateFrom = $(item).data('rate');
+                            if (debug_mode) {
+                                console.log(fromCur + " rate = " + rateFrom);
+                            }
+                            Currency.all().filter("currency", "=", toCur)
+                                .forEach(function(item) {
+                                    rateTo = $(item).data('rate');
+                                    if (debug_mode) {
+                                        console.log(toCur + " rate = " + rateTo);
+                                    }
+                                    value = (amount * rateTo / rateFrom);
+                                    $("#amount").val(value.toPrecision(4));
+                                });
+                        });
+                }
+                
+            </script>
+            
+            <div data-role="panel" data-position-fixed="true" id="mypanel" data-theme="b">
+                <!-- panel content goes here -->
+            </div><!-- /panel -->
+            
+            <div id="trip-expense-header" data-role="header" data-position="fixed" data-tap-toggle="false" data-theme='b'>
+                <a href="#mypanel" data-ajax="false"><i class='lIcon fa fa-bars'></i></a>
+                <h1 id="trip_expense_title"></h1>
+                <div id="tripexpense-header-controlgroup" class="ui-btn-right">
+                </div>
+            </div><!-- /header -->
+        
+            <div data-role="content">
+	        <div class='inset'>
+
+                    <div data-role="fieldcontain">
+                        <label id="label_date" for="eDate">Date:</label>
+                        <input type="datetime-local" name="eDate" id="eDate" />
+                    </div>
+                    
+                    <div data-role="fieldcontain">
+                        <label id="label_description" for="description">Description:</label>
+                        <input type="text" name="description" id="description" />
+                    </div>
+
+                    <div data-role="fieldcontain">
+                        <label id="label_amount" for="amount">Amount (EUR):</label>
+                        <input type="number" name="amount" id="amount" />
+                    </div>
+
+                    <div data-role="fieldcontain">
+                        <!-- convert from local currency -->
+                        <label id="label_currency" for="convertfrom">Convert from:</label>
+                        <div class="ui-grid-a">
+                            <div class="ui-block-a">
+                                <select name="convertfrom" id="convertfrom">
+                                </select>
+                            </div>
+                            <div class="ui-block-b">
+                                <a id="btn_convert" href="javascript:convertCurrency()" class="ui-btn ui-btn-inline ui-corner-all ui-btn-icon-right ui-icon-refresh">Convert</a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div data-role="fieldcontain">
+                        <label id="label_payment" for="expcategory">Payment method:</label>
+                        <select name="expcategory" id="expcategory">
+                        </select>
+                    </div>
+
+                    <div data-role="fieldcontain">
+                        <label id="label_notes" for="notes">Notes:</label>
+                        <textarea name="notes" id="notes"></textarea>
+                    </div>
+                </div>
+            </div><!-- /content -->
+        </div><!-- /page -->
+        
+    </body>
+</html>

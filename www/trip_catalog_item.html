@@ -1,0 +1,146 @@
+
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>JourneyNotes</title>
+    </head>
+    <body>
+        <div id="trip-category-item" data-role="page">
+
+            <script type="text/javascript">
+                
+                var tripname, category = "", itemObj = null;
+
+                $('#trip-category-item').on('pageinit', function (e, data) {
+
+                    var parameters = $(this).data("url").split("?")[1];
+                    tripname = parameters.split("&")[0].replace("tripname=","");  
+                    
+                    if ($(this).data("url").split("&")[1] !== undefined) {
+                        category = $(this).data("url").split("&")[1].replace("category=","");  
+                        item = $(this).data("url").split("&")[2].replace("item=","");  
+                        
+                        TripCategoryItem.all().filter("tripname", "=", tripname)
+                                    .filter("description", "=", item)
+                                    .list(null, function (items) {
+                            items.forEach(function(item) {
+                                itemObj = item;
+                                $("#description").val($(item).data('description'));
+                                $("#quantity").val($(item).data('quantity'));
+                                if (debug_mode) {
+                                    console.log("reading checked: " + $(item).data('checked'));
+                                }
+                                $("#item-checked").prop("checked", $(item).data('checked')).checkboxradio('refresh');
+                                $("#notes").val($(item).data('notes'));
+                            });
+                        });
+                        $("#fc1").hide();
+                    }
+                    else {
+                        ChecklistCategory.all()
+                                .order("name", true)
+                                    .list(null, function (items) {
+                            items.forEach(function(item) {
+                                $('#select-category').append("<option value='" 
+                                    + $(item).data('name') + "'>" 
+                                    + $(item).data('name') + "</option>");
+                            });
+                            $("#select-category").val("" + category);
+                            $('#select-category').selectmenu("refresh");
+                        });
+                        jQuery('#label_category').empty().append(jQuery.i18n.prop("label_category"));
+                        $("#fc1").show();
+                    }
+                    
+                    jQuery('#checklist_item_title').empty().append(category);
+                    jQuery('#label_description').empty().append(jQuery.i18n.prop("label_description"));
+                    jQuery('#label_quantity').empty().append(jQuery.i18n.prop("label_quantity"));
+                    jQuery('#label_notes').empty().append(jQuery.i18n.prop("label_notes"));
+                    jQuery('#label_ready').empty().append(jQuery.i18n.prop("label_ready"));
+                    
+                    var cancelLink = "<a id='a_back' href='trip_checklist.html?tripname=" + tripname
+                             + "' class='ui-btn ui-btn-inner'><i class='lIcon fa fa-backward'></i></a>";
+                    $('#checklistitem-header-controlgroup').append(cancelLink);
+
+                    var saveLink = $("<a href='trip_checklist.html?tripname=" + 
+                        tripname + "' class='ui-btn ui-btn-inner'><i class='lIcon fa fa-save'></i></a>")
+                            .click(function(e) {
+                                if (itemObj !== null)
+                                {
+                                    persistence.remove(itemObj);
+                                }
+                                else {
+                                    category = $("#select-category").val();
+                                }
+                                itemObj = new TripCategoryItem({tripname: tripname,
+                                    categoryname: category, 
+                                    description: $("#description").val(),
+                                    quantity: $("#quantity").val(),
+                                    checked: $("#item-checked").prop("checked"),
+                                    notes: $("#notes").val()}); 
+                                persistence.add(itemObj);
+                                persistence.flush(function(tx) {
+                                    if (typeof tx === 'undefined' || tx.toString() === "") {
+                                        navigator.notification.alert(
+                                            jQuery.i18n.prop("msg_saved", $("#description").val()),
+                                            null, 'JourneyNotes', 'Ok');
+                                    }
+                                    else {
+                                        navigator.notification.alert(
+                                            jQuery.i18n.prop("msg_error_generic"),
+                                            null, 'JourneyNotes', 'Ok');
+                                    }
+                                });
+                            });
+                            
+                    $('#checklistitem-header-controlgroup').append(saveLink);
+                    addPanel();
+                });
+
+            </script>
+            
+            <div data-role="panel" data-position-fixed="true" id="mypanel" data-theme="b">
+                <!-- panel content goes here -->
+            </div><!-- /panel -->
+            
+            <div id="trip-category-item-hd" data-role="header" data-position="fixed" data-tap-toggle="false" data-theme='b'>
+                <a href="#mypanel" data-ajax="false"><i class='lIcon fa fa-bars'></i></a>
+                <h1 id="checklist_item_title"></h1>
+                <div id="checklistitem-header-controlgroup" class="ui-btn-right">
+                </div>
+            </div><!-- /header -->
+
+            <div data-role="content">
+	        <div class='inset'>
+        
+                    <div id="fc1" data-role="fieldcontain" data-type="horizontal">
+                        <label id="label_category" for="select-category">Category:</label>
+                        <select name="select-category" id="select-category">
+                        </select>
+                    </div>
+
+                    <div data-role="fieldcontain">
+                        <label id="label_description" for="description">Description:</label>
+                        <input type="text" name="description" id="description" value=""  />
+                    </div>
+
+                    <div data-role="fieldcontain" data-type="horizontal">
+                        <label id="label_quantity" for="quantity">Quantity:</label>
+                        <input type="number" name="quantity" id="quantity" value=""/>
+                    </div>
+
+                    <div data-role="fieldcontain" data-type="horizontal">
+                        <label id="label_notes" for="notes">Notes:</label>
+                        <textarea  name="notes" id="notes" ></textarea>
+                    </div>
+
+                    <div data-role="fieldcontain" data-type="horizontal">
+                        <label id="label_ready" for="item-checked">Ready?</label>
+                        <input type="checkbox" name="item-checked" id="item-checked" />
+                    </div>                
+                </div>                
+            </div><!-- /content -->
+        </div><!-- /page -->
+        
+    </body>
+</html>

@@ -1,0 +1,47 @@
+
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>JourneyNotes</title>
+    </head>
+    <body>
+        <div id="credits-page" data-role="page">
+
+            <script>
+                $('#credits-page').on('pageinit', function (e, data) {
+                    
+                    $('#credits_header').empty().append($.i18n.prop("credits_header"));
+                    $('#layout').empty().append($.i18n.prop("layout", "showWebsite('http://nativedroid.godesign.ch')"));
+                    $('#calendar_cr').empty().append($.i18n.prop("calendar_cr", "showWebsite('http://arshaw.com/fullcalendar')"));
+                    $('#currency_rates').empty().append($.i18n.prop("currency_rates", "showWebsite('https://openexchangerates.org/')"));
+                    $('#weather_info').empty().append($.i18n.prop("weather_info", "showWebsite('http://openweathermap.org/')"));
+                    $('#info_info').empty().append($.i18n.prop("info_info", "showWebsite('https://www.mediawiki.org/wiki/MediaWiki/')"));
+                    
+                    addPanel();
+                });
+            </script>
+            
+            <div data-role="panel" data-position-fixed="true" id="mypanel" data-theme="b">
+                <!-- panel content goes here -->
+            </div><!-- /panel -->
+            
+            <div id="header" data-role="header" data-position="fixed" data-tap-toggle="false" data-theme='b'>
+                <a href="#mypanel" data-ajax="false"><i class='lIcon fa fa-bars'></i></a>
+                <h1 id="credits_header"></h1>
+            </div><!-- /header -->
+
+            <div data-role="content">
+	        <div class='inset'>
+                    <ul class='simpleList'>
+                        <li><p id="layout"></p></li>
+                        <li><p id="calendar_cr"></p></li>
+                        <li><p id="currency_rates"></p></li>
+                        <li><p id="weather_info"></p></li>
+                        <li><p id="info_info"></p></li>
+                    </ul>
+                </div>
+                
+            </div><!-- /content -->
+        </div><!-- /page -->
+    </body>
+</html>

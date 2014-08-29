@@ -1,0 +1,206 @@
+
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>JourneyNotes</title>
+    </head>
+    <body>
+        <div id="settings" data-role="page">
+            
+            <style scoped>
+                .ui-grid-a .ui-block-a { width: 65%; }
+                .ui-grid-a .ui-block-b { width: 35%; }                 
+                
+                .ui-grid-b .ui-block-a { width: 35%; }
+                .ui-grid-b .ui-block-b { width: 50%; }                 
+                .ui-grid-b .ui-block-c { width: 15%; }                 
+            </style>
+            
+            <script type="text/javascript">
+                
+                $('#settings').on('pageinit', function (e, data) {
+                    
+                    var sVal = (localStorage.getItem("mytrip_google_access_token") !== null);
+                    $("#flip-checkbox-google").prop('checked', sVal).flipswitch( "refresh" );
+                    if (debug_mode) {
+                        console.log("sVal: " + sVal);
+                    }
+                    $("#flip-checkbox-google").on("change", function(event) {
+                        if(sVal !== $("#flip-checkbox-google").prop('checked')) {
+                            if (!sVal) {
+                                oauth2_login(handleAuthResult);
+                            }
+                            else {
+                                revokeAuth();
+                            }
+                        }
+                        sVal = $("#flip-checkbox-google").prop('checked');
+                    });
+                    
+                    calendarId = localStorage.getItem("mytrip_calendar_id");
+                    buildCalendarList();
+                    
+                    $('#settings_title').empty().append($.i18n.prop("settings_header"));
+                    $('#backup_header').empty().append($.i18n.prop("backup_header"));
+                    $('#restore_header').empty().append($.i18n.prop("restore_header"));
+                    $('#restore_info').empty().append($.i18n.prop("restore_info"));
+                    $('#calendar_label').empty().append($.i18n.prop("calendar_title"));
+                    $('#label_google_auth').empty().append($.i18n.prop("label_google_auth"));
+                    
+                    addPanel();
+                });
+                
+                function dumpLocalDatabase (where) {
+                    if (typeof gapi !== 'undefined') {
+                        persistence.dumpToJson(null, function(content) {                        
+                            if (where === 'google') {
+                                uploadFileGDrive("", "mytrip-localdb.dump", content, "application/json");
+                            }
+                        });
+                    }
+                    else {
+                        navigator.notification.alert(
+                            jQuery.i18n.prop("msg_not_online"),
+                            null, 'JourneyNotes', 'Ok');
+                    }
+                }
+                
+                function restoreDatabase () {
+                    if (typeof gapi !== 'undefined') {
+                        $.mobile.changePage('gdrive.html');
+                    }
+                    else {
+                        navigator.notification.alert(
+                            jQuery.i18n.prop("msg_not_online"),
+                            null, 'JourneyNotes', 'Ok');
+                    }
+                }
+                
+                function buildCalendarList() {
+                    
+                    if (typeof gapi !== 'undefined') {
+                        
+                        $("#list_of_calendars").empty();
+                        getToken(function () {
+                            var request = gapi.client.request({
+                                'path': '/calendar/v3/users/me/calendarList?access_token=' + 
+                                        localStorage.getItem("mytrip_google_access_token"),
+                                'method': 'GET'
+                            });
+                            callback = function(resp) {
+
+                                if (!resp.error) {
+                                    for (var idx in resp.items) {
+                                        var option = "<option value='" + resp.items[idx].id + "'>"
+                                            + resp.items[idx].summary + "</option>";
+                                        if (debug_mode) {
+                                            console.log("opt: " + option);
+                                        }
+                                        $('#list_of_calendars').append(option);
+                                    };
+                                    if (debug_mode) {
+                                        console.log("calendarId: " + calendarId);
+                                    }
+                                    if (typeof calendarId !== 'undefined' && calendarId !== null) {
+                                        $("#list_of_calendars").val(calendarId);
+                                    }
+                                    else {
+                                        if (resp.items.length > 0) {
+                                            $("#list_of_calendars").val(resp.items[0].id);
+                                            calendarId = resp.items[0].id;
+                                            localStorage.setItem("mytrip_calendar_id", resp.items[0].id);
+                                        }
+                                    }
+                                    $('#list_of_calendars').selectmenu("refresh");
+                                    if (debug_mode) {
+                                        console.log("list_of_calendars refreshed!");
+                                    }
+                                }
+                                else {
+                                    navigator.notification.alert(
+                                         jQuery.i18n.prop("msg_error", resp.error.message),
+                                         null, 'JourneyNotes', 'Ok');
+                                }
+                            };
+                            request.execute(callback);
+                        });
+                    }
+                }
+
+                function setCalendar() {
+                    calendarId = $("#list_of_calendars").val();
+                    localStorage.setItem("mytrip_calendar_id", calendarId);
+                }
+                
+            </script>
+            
+            <div data-role="panel" data-position-fixed="true" id="mypanel" data-theme="b">
+                <!-- panel content goes here -->
+            </div><!-- /panel -->
+            
+            <div id="settings-header" data-role="header" data-position="fixed" data-tap-toggle="false" data-theme='b'>
+                <a href="#mypanel" data-ajax="false"><i class='lIcon fa fa-bars'></i></a>
+                <h1 id="settings_title"></h1>
+            </div><!-- /header -->
+
+            <div data-role="content">
+	        <div class='inset'>
+                
+                    <div data-role="fieldcontain">
+                        <div class="ui-grid-a">
+                            <div class="ui-block-a">
+                                <label id="label_google_auth" for="flip-checkbox-google" style="margin-top: 10px;">Google auth.</label>
+                            </div>
+                            <div class="ui-block-b">
+                                <input type="checkbox" data-role="flipswitch" id="flip-checkbox-google" style="margin-top: 0px;">                
+                            </div>
+                        </div>
+                    </div>
+
+                    <div data-role="fieldcontain">
+                        <div class="ui-grid-b">
+                            <div class="ui-block-a">
+                                <label id="calendar_label" for="list_of_calendars" style="margin-top: 20px;"></label>
+                            </div>
+                            <div class="ui-block-b">
+                                <select name="list_of_calendars" id="list_of_calendars" style="margin-top: 10px;">
+                                </select>
+                            </div>
+                            <div class="ui-block-c">
+                                <a href="javascript:setCalendar()" class="ui-btn ui-btn-inline ui-corner-all ui-btn-icon-notext ui-icon-check" style="margin-top: 15px;">Set</a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div data-role="fieldcontain">
+                        <div class="ui-grid-a">
+                            <div class="ui-block-a" id="backup_header">
+                            </div>
+                            <div class="ui-block-b">
+                                <a href="javascript:dumpLocalDatabase('google')">
+                                    <img src='themes/images/upload.png' alt='Google drive' height="32" width="32"/>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div data-role="fieldcontain">
+                        <div class="ui-grid-a">
+                            <div class="ui-block-a" id="restore_header">
+                                <p>Restore data</p>
+                            </div>
+                            <div class="ui-block-b">
+                                <a href="javascript:restoreDatabase()">
+                                    <img src='themes/images/download.png' alt='Google drive' height="32" width="32"/>
+                                </a>
+                            </div>
+                        </div>
+                        <div id="restore_info">
+                        </div>
+                    </div>
+                </div>
+            </div><!-- /content -->
+        </div><!-- /page -->
+        
+    </body>
+</html>
