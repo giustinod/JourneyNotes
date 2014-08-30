@@ -77,12 +77,13 @@
                         position: absolute;
                         padding: 0;
                         margin: 0;
-                        top: 10px;
+                        top: 15px;
                         left: 40px;
                         width: 150px;
                         z-index: 2;
                     }
                     //.ui-input-search { width: 100% !important; }
+                    .ui-input-search { padding: 0 0px; margin: 0; width: 100%; background-position: 8px 50%; background-repeat: no-repeat; position: relative; }
                     .ui-grid-a .ui-block-a { width: 85%; }
                     .ui-grid-a .ui-block-b { width: 15%; }     
                 }
@@ -243,6 +244,7 @@
                             }
                             searchWikipedia($("#search-input").val());
                             //searchFoursquare($("#search-input").val());
+                            $("#search-input").blur();
                         }
                     });
                     
@@ -1010,7 +1012,7 @@
                                                                 console.log("pageid: " + pageid + ", title: " + title + ", url: " + fullurl);
                                                             }
                                                             var point = new google.maps.LatLng(page.lat, page.lon);
-                                                            var content = '<div><h3><a href="#" onclick="window.open(\'' + transformUrl(fullurl) + '\', \'_system\');">' + 
+                                                            var content = '<div><h3><a href="#" onclick="window.open(\'' + transformUrl(fullurl) + '\', \'_blank\');">' + 
                                                                 page.title + '</a></h3><p>' + jQuery.i18n.prop("label_dist") + ': ' + page.dist + '</p></div>';
 
                                                             markersArray.push(createMarker(point, title, content, wikiIcon));
