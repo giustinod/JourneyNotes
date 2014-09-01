@@ -18,13 +18,16 @@
                     #nearby_map_canvas {
                         padding: 0;
                         margin: 0;
-                        height: 480px; 
+                        height: 600px; 
                         width: 100%;                      
                     }
                     #search-box {
                         position: absolute;
-                        top: 10px;
-                        left: 100px;
+                        padding: 0;
+                        margin: 0;
+                        top: 15px;
+                        left: 40px;
+                        width: 250px;
                         z-index: 2;
                     }
                     #weathermap_canvas {
@@ -33,6 +36,7 @@
                         height: 480px; 
                         width: 100%;                      
                     }
+                    .ui-input-search { padding: 0 0px; margin: 0; width: 100%; background-position: 8px 50%; background-repeat: no-repeat; position: relative; }
                     .ui-grid-a .ui-block-a { width: 40%; }
                     .ui-grid-a .ui-block-b { width: 60%; }     
                 }
@@ -44,13 +48,16 @@
                     #nearby_map_canvas {
                         padding: 0;
                         margin: 0;
-                        height: 640px; 
+                        height: 840px; 
                         width: 100%;                      
                     }
                     #search-box {
                         position: absolute;
-                        top: 10px;
-                        left: 50px;
+                        padding: 0;
+                        margin: 0;
+                        top: 15px;
+                        left: 40px;
+                        width: 250px;
                         z-index: 2;
                     }
                     #weathermap_canvas {
@@ -59,6 +66,7 @@
                         height: 480px; 
                         width: 100%;                      
                     }
+                    .ui-input-search { padding: 0 0px; margin: 0; width: 100%; background-position: 8px 50%; background-repeat: no-repeat; position: relative; }
                     .ui-grid-a .ui-block-a { width: 40%; }
                     .ui-grid-a .ui-block-b { width: 60%; }     
                 }
@@ -71,6 +79,31 @@
                         padding: 0;
                         margin: 0;
                         height: 320px; 
+                        width: 100%;                      
+                    }
+                    #search-box {
+                        position: absolute;
+                        padding: 0;
+                        margin: 0;
+                        top: 15px;
+                        left: 40px;
+                        width: 150px;
+                        z-index: 2;
+                    }
+                    //.ui-input-search { width: 100% !important; }
+                    .ui-input-search { padding: 0 0px; margin: 0; width: 100%; background-position: 8px 50%; background-repeat: no-repeat; position: relative; }
+                    .ui-grid-a .ui-block-a { width: 85%; }
+                    .ui-grid-a .ui-block-b { width: 15%; }     
+                }
+
+                /*
+                 * iPhone 5
+                 */
+                @media screen and (device-aspect-ratio: 40/71) and (max-device-width: 640px) {
+                    #nearby_map_canvas {
+                        padding: 0;
+                        margin: 0;
+                        height: 420px; 
                         width: 100%;                      
                     }
                     #search-box {
@@ -243,6 +276,7 @@
                                 console.log( "Query " + $("#search-input").val() );
                             }
                             searchWikipedia($("#search-input").val());
+                            searchPlaces($("#search-input").val());
                             //searchFoursquare($("#search-input").val());
                             $("#search-input").blur();
                         }
@@ -279,8 +313,20 @@
 
                     addPanel();
                     switchTab(parseInt(ptab));
+                    
                 });
 
+                $(document).on('focus', 'input, textArea', function () {
+                    $('div[data-role="footer"]').hide();
+                })  
+
+                $(document).on('blur', 'input, textarea', function() {
+                    setTimeout(function() {
+                        window.scrollTo(document.body.scrollLeft, document.body.scrollTop);
+                        $('div[data-role="footer"]').show();
+                    }, 0);
+                });
+                
                 function clearOverlays() {
                     for (var i = 0; i < markersArray.length; i++ ) {
                         markersArray[i].setMap(null);
@@ -560,6 +606,16 @@
                                 center: center
                             };
                             mapInfo = new google.maps.Map(document.getElementById( "nearby_map_canvas" ), mapOptions);
+                            navigator.geolocation.getCurrentPosition(
+                                function (position) {
+                                    var youAreHere = new google.maps.LatLng(position.coords.latitude, position.coords.longitude);
+                                    var marker = new google.maps.Marker({
+                                        position: youAreHere,
+                                        title: $.i18n.prop("msg_you_are_here"),
+                                        map: mapInfo,
+                                        zIndex: Math.round(youAreHere.lat()*-100000)<<5
+                                    });
+                                });
                         }
                         else {
                             navigator.notification.alert(
@@ -628,7 +684,6 @@
                     }
                     else {
                         switchTab(2);
-                        //initInfo();
                     }
                 });                
                 
@@ -969,6 +1024,81 @@
                     }
                 }
                 
+                
+                function searchPlaces (text) {
+
+                    if (gMapsScriptLoaded && navigator.connection.type !== Connection.NONE) {
+                        
+                        var center = new google.maps.LatLng(lat, lng);
+                        /*
+                         * Google Places
+                         */ 
+                        var request = {
+                            location: center,
+                            query: text,
+                            radius: '3000',
+                            language: localStorage.getItem("mytrip_lang").substring(0, 2),
+                            types: ['cafe', 'food', 'restaurant']
+                        };
+
+                        var eatingIcon = {
+                            url: 'themes/images/eating.jpeg',
+                            // This marker is 20 pixels wide by 32 pixels tall.
+                            size: new google.maps.Size(24, 24),
+                            // The origin for this image is 0,0.
+                            origin: new google.maps.Point(0,0),
+                            // The anchor for this image is the base of the flagpole at 0,32.
+                            anchor: new google.maps.Point(0, 24)
+                        };
+
+                        var service = new google.maps.places.PlacesService(mapInfo);
+                        service.textSearch(request, function (results, status) {
+                            if (status === google.maps.places.PlacesServiceStatus.OK) {
+                                for (var i = 0; i < results.length; i++) {
+                                    var action = "", phone = "";
+                                    var request = {
+                                        placeId: results[i].place_id,
+                                        language: localStorage.getItem("mytrip_lang").substring(0, 2)
+                                    };
+                                    try {
+                                        service.getDetails(request, function (place, status) {
+                                            if (status === google.maps.places.PlacesServiceStatus.OK) {
+                                                
+                                                if (debug_mode) {
+                                                    console.log("gplace: " + JSON.stringify(place));
+                                                }
+                                                if (typeof place.website !== 'undefined' && place.website.length > 0) {
+                                                    action = " onclick=\"window.open('" + place.website + "', '_system');\"";
+                                                }
+                                                if (typeof place.international_phone_number !== 'undefined') {
+                                                    phone = '<a href=”#" onclick="phoneCall(\'' + place.international_phone_number.replace(/ /g, "") + 
+                                                            '\')">' + place.international_phone_number + '</a>';
+                                                }
+                                                if (debug_mode) {
+                                                    console.log("phone link: " + phone);
+                                                }
+                                                var contentString = '<div><h3><a href="#"' + action + '>' +
+                                                    place.name + '</a></h3><p>' + place.types[0].replace(/_/g, " ") + ', ' + 
+                                                    place.formatted_address + '</p><p>' + phone + '</p></div>';
+
+                                                markersArray.push(createMarker(place.geometry.location, place.name, contentString, eatingIcon));
+                                            }
+                                        });
+                                    }
+                                    catch (e) {
+                                        if (debug_mode) {
+                                            console.log(e);
+                                        }
+                                        navigator.notification.alert(
+                                            jQuery.i18n.prop("msg_error", e),
+                                            null, 'JourneyNotes', 'Ok');
+                                    }
+                                }
+                            }
+                        });
+                    }
+                }
+                
                 function searchWikipedia (text) {
 
                     if (gMapsScriptLoaded && navigator.connection.type !== Connection.NONE) {
@@ -1027,163 +1157,6 @@
                                     jQuery.i18n.prop("msg_error_generic"), null, 'JourneyNotes', 'Ok');
                             }
                         });
-                       
-                        navigator.geolocation.getCurrentPosition(
-                            function (position) {
-                                var youAreHere = new google.maps.LatLng(position.coords.latitude, position.coords.longitude);
-                                var marker = new google.maps.Marker({
-                                    position: youAreHere,
-                                    title: $.i18n.prop("msg_you_are_here"),
-                                    map: mapInfo,
-                                    zIndex: Math.round(youAreHere.lat()*-100000)<<5
-                                });
-                            });
-                    }
-                }
-
-                function initInfo() {
-                    
-                    if (gMapsScriptLoaded && navigator.connection.type !== Connection.NONE) {
-                        
-                        var buf = new Array();
-                        var center = new google.maps.LatLng(lat, lng);
-                        var mapOptions = {
-                            zoom: 13,
-                            center: center
-                        };
-                        mapInfo = new google.maps.Map(document.getElementById( "nearby_map_canvas" ), mapOptions);
-                        
-                        var wikiIcon = {
-                            url: 'themes/images/Wikipedia.png',
-                            // This marker is 20 pixels wide by 32 pixels tall.
-                            size: new google.maps.Size(24, 24),
-                            // The origin for this image is 0,0.
-                            origin: new google.maps.Point(0,0),
-                            // The anchor for this image is the base of the flagpole at 0,32.
-                            anchor: new google.maps.Point(0, 24)
-                        };
-
-                        /*
-                         * To be completely reviewed using wikimedia API
-                         * api.wikilocation.org removed on 19 aug, 2014
-                         */
-                        $.getJSON("https://" + localStorage.getItem("mytrip_lang").substring(0, 2)
-                                + ".wikipedia.org/w/api.php?action=query&list=geosearch&gsradius=7000&gscoord="
-                                + lat + "%7C" + lng + "&format=json",
-                            function(data) {
-                                if (debug_mode) {
-                                    console.log("wiki data: " + JSON.stringify(data));
-                                }
-                                //google map with placemarks
-                                for (var key in data.query.geosearch) {
-                                    var article = data.query.geosearch[key]; 
-                                    var pageid = article.pageid;
-                                    if (debug_mode) {
-                                        console.log("pageid: " + pageid);
-                                    }
-                                    if (pageid > 0) {
-                                        buf[pageid] = [article.lat, article.lon, article.dist];
-                                        $.getJSON("https://" + localStorage.getItem("mytrip_lang").substring(0, 2)
-                                                + ".wikipedia.org/w/api.php?action=query&prop=info&pageids="
-                                                + pageid + "&inprop=url&format=json",
-                                            function(resp) {
-                                                if (debug_mode) {
-                                                    console.log("wiki resp: " + JSON.stringify(resp));
-                                                }
-                                                for (var id in resp.query.pages) {
-
-                                                    var page = resp.query.pages[id];
-                                                    if (debug_mode) {
-                                                        console.log("wiki page: " + JSON.stringify(page));
-                                                    }
-                                                    var myLatlng = new google.maps.LatLng(buf[page.pageid][0], buf[page.pageid][1]);
-                                                    var contentString = '<div><h3><a href="#" onclick="window.open(\'' + transformUrl(page.fullurl) + '\', \'_system\');">' + 
-                                                        page.title + '</a></h3><p>' + jQuery.i18n.prop("label_dist") + ": " +
-                                                        buf[page.pageid][2] + '</p></div>';
-
-                                                    createMarker(myLatlng, page.title, contentString, wikiIcon);
-                                                }
-                                            });
-                                    }
-                                }
-                        });
-                        
-                        /*
-                         * Google Places
-                         */ 
-                        var request = {
-                            location: center,
-                            radius: '3000',
-                            language: localStorage.getItem("mytrip_lang").substring(0, 2),
-                            types: ['cafe', 'food', 'restaurant']
-                        };
-
-                        var eatingIcon = {
-                            url: 'themes/images/eating.jpeg',
-                            // This marker is 20 pixels wide by 32 pixels tall.
-                            size: new google.maps.Size(24, 24),
-                            // The origin for this image is 0,0.
-                            origin: new google.maps.Point(0,0),
-                            // The anchor for this image is the base of the flagpole at 0,32.
-                            anchor: new google.maps.Point(0, 24)
-                        };
-
-                        var service = new google.maps.places.PlacesService(mapInfo);
-                        service.nearbySearch(request, function (results, status) {
-                            if (status === google.maps.places.PlacesServiceStatus.OK) {
-                                for (var i = 0; i < results.length; i++) {
-                                    var action = "", phone = "";
-                                    var request = {
-                                        placeId: results[i].place_id,
-                                        language: localStorage.getItem("mytrip_lang").substring(0, 2)
-                                    };
-                                    try {
-                                        service.getDetails(request, function (place, status) {
-                                            if (status === google.maps.places.PlacesServiceStatus.OK) {
-                                                
-                                                if (debug_mode) {
-                                                    console.log("gplace: " + JSON.stringify(place));
-                                                }
-                                                if (typeof place.website !== 'undefined' && place.website.length > 0) {
-                                                    action = " onclick=\"window.open('" + place.website + "', '_system');\"";
-                                                }
-                                                if (typeof place.international_phone_number !== 'undefined') {
-                                                    phone = '<a href=”#" onclick="phoneCall(\'' + place.international_phone_number.replace(/ /g, "") + 
-                                                            '\')">' + place.international_phone_number + '</a>';
-                                                }
-                                                if (debug_mode) {
-                                                    console.log("phone link: " + phone);
-                                                }
-                                                var contentString = '<div><h3><a href="#"' + action + '>' +
-                                                    place.name + '</a></h3><p>' + place.types[0].replace(/_/g, " ") + ', ' + 
-                                                    place.formatted_address + '</p><p>' + phone + '</p></div>';
-
-                                                createMarker(place.geometry.location, place.name, contentString, eatingIcon);
-                                            }
-                                        });
-                                    }
-                                    catch (e) {
-                                        if (debug_mode) {
-                                            console.log(e);
-                                        }
-                                        navigator.notification.alert(
-                                            jQuery.i18n.prop("msg_error", e),
-                                            null, 'JourneyNotes', 'Ok');
-                                    }
-                                }
-                            }
-                        });
-                       
-                        navigator.geolocation.getCurrentPosition(
-                            function (position) {
-                                var youAreHere = new google.maps.LatLng(position.coords.latitude, position.coords.longitude);
-                                var marker = new google.maps.Marker({
-                                    position: youAreHere,
-                                    title: $.i18n.prop("msg_you_are_here"),
-                                    map: map,
-                                    zIndex: Math.round(youAreHere.lat()*-100000)<<5
-                                });
-                            });
                     }
                 }
                 
@@ -1239,9 +1212,12 @@
                 }
     
                 function transformUrl(url) {
-                    var dot_pos = url.indexOf(".");
-                    var new_url = url.substring(0, dot_pos) + ".m" + url.substring(dot_pos);
-                    return new_url;
+                    if((navigator.userAgent.match(/iPhone/i)) || (navigator.userAgent.match(/iPod/i))) {
+                        var dot_pos = url.indexOf(".");
+                        var new_url = url.substring(0, dot_pos) + ".m" + url.substring(dot_pos);
+                        return new_url;
+                    }
+                    return url;
                 }
                 
                 // A button will call this function
