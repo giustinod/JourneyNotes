@@ -104,6 +104,17 @@
                     addPanel();
                 });
                 
+                $(document).on('focus', 'input, textArea', function () {
+                    $('div[data-role="footer"]').hide();
+                })  
+
+                $(document).on('blur', 'input, textarea', function() {
+                    setTimeout(function() {
+                        window.scrollTo(document.body.scrollLeft, document.body.scrollTop);
+                        $('div[data-role="footer"]').show();
+                    }, 0);
+                });
+                
                 function gotoTab(page) {
                     if (itemObj === null) {
                         navigator.notification.alert(
