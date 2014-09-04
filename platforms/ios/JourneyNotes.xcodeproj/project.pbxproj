@@ -56,6 +56,7 @@
 		D4A0D8761607E02300AEF8BB /* Default-568h@2x~iphone.png in Resources */ = {isa = PBXBuildFile; fileRef = D4A0D8751607E02300AEF8BB /* Default-568h@2x~iphone.png */; };
 		DE01C58861B84FB78F8C2638 /* CDVDevice.m in Sources */ = {isa = PBXBuildFile; fileRef = C9EEF7506E4B47EEAB0686BD /* CDVDevice.m */; };
 		E1607B7470F04709AC7F5744 /* Social.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 179ECDAA20E94AD393950951 /* Social.framework */; settings = {ATTRIBUTES = (Weak, ); }; };
+		FEF8A940168A40C486D2AABB /* CDVSplashScreen.m in Sources */ = {isa = PBXBuildFile; fileRef = 539C9BD39D77406FA56F3F44 /* CDVSplashScreen.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -154,6 +155,8 @@
 		F1D6202B469849939AB18A5D /* CDVLogger.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = CDVLogger.h; path = org.apache.cordova.console/CDVLogger.h; sourceTree = "<group>"; };
 		F46CFC8C81C341C6B42CCFC7 /* CDVInAppBrowser.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = CDVInAppBrowser.m; path = org.apache.cordova.inappbrowser/CDVInAppBrowser.m; sourceTree = "<group>"; };
 		F840E1F0165FE0F500CFE078 /* config.xml */ = {isa = PBXFileReference; lastKnownFileType = text.xml; name = config.xml; path = JourneyNotes/config.xml; sourceTree = "<group>"; };
+		539C9BD39D77406FA56F3F44 /* CDVSplashScreen.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = "CDVSplashScreen.m"; path = "org.apache.cordova.splashscreen/CDVSplashScreen.m"; sourceTree = "<group>"; fileEncoding = 4; };
+		CADAC5B8B4FB4B508BE7FEE1 /* CDVSplashScreen.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = "CDVSplashScreen.h"; path = "org.apache.cordova.splashscreen/CDVSplashScreen.h"; sourceTree = "<group>"; fileEncoding = 4; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -310,6 +313,8 @@
 				4E61F1CAFCD64A789E897517 /* CDVInAppBrowser.h */,
 				5A6E151EBEC14828A45158BB /* SocialSharing.m */,
 				EEBE4F3C609D4E669C16B357 /* SocialSharing.h */,
+				539C9BD39D77406FA56F3F44 /* CDVSplashScreen.m */,
+				CADAC5B8B4FB4B508BE7FEE1 /* CDVSplashScreen.h */,
 			);
 			name = Plugins;
 			path = JourneyNotes/Plugins;
@@ -520,6 +525,7 @@
 				9ABD17F73D2C49B68625DADC /* PhoneDialer.m in Sources */,
 				25732952331A48FE86AD6356 /* CDVInAppBrowser.m in Sources */,
 				236C8BC04ABB4445B8F123A2 /* SocialSharing.m in Sources */,
+				FEF8A940168A40C486D2AABB /* CDVSplashScreen.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

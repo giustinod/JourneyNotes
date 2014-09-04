@@ -277,7 +277,7 @@
                             }
                             searchWikipedia($("#search-input").val());
                             searchPlaces($("#search-input").val());
-                            //searchFoursquare($("#search-input").val());
+                            searchFoursquare($("#search-input").val());
                             $("#search-input").blur();
                         }
                     });
@@ -311,9 +311,13 @@
                         });
                     }
 
-                    addPanel();
-                    switchTab(parseInt(ptab));
-                    
+                    setTimeout(function () {
+                        $('#notes').css({
+                            'height': 'auto'
+                        });
+                        addPanel();
+                        switchTab(parseInt(ptab));
+                    }, 0);
                 });
 
                 $(document).on('focus', 'input, textArea', function () {
@@ -333,14 +337,6 @@
                     }
                     markersArray.length = 0;
                 } 
-
-                function formatAddress(vAddress) {
-                    var fAddress = "";
-                    for (var c in vAddress) {
-                        fAddress += vAddress[c] + "<br>";
-                    }
-                    return fAddress;
-                }
 
                 function geocodeAndSave() {
                     
@@ -1099,6 +1095,73 @@
                     }
                 }
                 
+                function searchFoursquare(text) {
+
+                    if (gMapsScriptLoaded && navigator.connection.type !== Connection.NONE) {
+                        
+                        var fsIcon = {
+                            url: 'themes/images/foursquare-icon-36x36.png',
+                            // This marker is 20 pixels wide by 32 pixels tall.
+                            size: new google.maps.Size(24, 24),
+                            // The origin for this image is 0,0.
+                            origin: new google.maps.Point(0,0),
+                            // The anchor for this image is the base of the flagpole at 0,32.
+                            anchor: new google.maps.Point(0, 24)
+                        };
+
+                        $.ajax({
+                            url: "https://api.foursquare.com/v2/venues/search?client_id=AZOZD1N515MUSK50NRFC5VQOTFXVR1D2HDUT5H0XN2VEFJE5&client_secret=ZP0BOFKE4MWHC2VPYWUGDZXDRPE32KKZOBNUZY5WYMP1SQXQ" 
+                                + "&v=20140904&ll=" +  lat + "," + lng + "&query=" + text,
+                            crossDomain: true, // enable this
+                            dataType: 'jsonp',
+                            success: function(resp) {
+                                if (debug_mode) {
+                                    console.log( "Resp " + JSON.stringify(resp.response) );
+                                }
+                                if (resp.meta.code === 200) {
+                                    var venues = resp.response.venues;
+                                    for (var key in venues) {
+                                        var v = venues[key];
+                                        var loc = v.location;
+                                        if (typeof loc !== 'undefined' && typeof loc.address !== 'undefined' && loc.distance < 10000) {
+                                            var point = new google.maps.LatLng(loc.lat, loc.lng);
+                                            if (debug_mode) {
+                                                console.log( "Venue: " + v.name + 
+                                                        ", " + JSON.stringify(loc) +
+                                                        ", " + JSON.stringify(v.categories));
+                                            }
+                                            var cat = "";
+                                            if (v.categories.length > 0) {
+                                                cat += "<p>" + jQuery.i18n.prop("checklist_items_title") + 
+                                                        ": " + v.categories[0].name + "</p>";
+                                            }
+                                            var content = "<h3>" + v.name + "</h3>"
+                                                    + "<p>" + loc.address + ", " + loc.city + "</p>"
+                                                    + cat + "<p>" + jQuery.i18n.prop("label_dist")
+                                                    + ": " + loc.distance + "m</p>";
+
+                                            markersArray.push(createMarker(point, v.name, content, fsIcon));
+                                        }
+                                    }
+                                }
+                                else {
+                                    if (debug_mode) {
+                                        console.log( "Errore " + JSON.stringify(resp.meta) );
+                                    }
+                                    navigator.notification.alert(
+                                        jQuery.i18n.prop("msg_error", resp.meta),
+                                        null, 'JourneyNotes', 'Ok');
+                                }
+                            },
+                            error: function() {
+                                navigator.notification.alert(
+                                    jQuery.i18n.prop("msg_error_generic"), 
+                                    null, 'JourneyNotes', 'Ok');
+                            }
+                        });
+                    }
+                }
+
                 function searchWikipedia (text) {
 
                     if (gMapsScriptLoaded && navigator.connection.type !== Connection.NONE) {
@@ -1154,7 +1217,8 @@
                                     },
                             error: function() {
                                 navigator.notification.alert(
-                                    jQuery.i18n.prop("msg_error_generic"), null, 'JourneyNotes', 'Ok');
+                                    jQuery.i18n.prop("msg_error_generic"), 
+                                    null, 'JourneyNotes', 'Ok');
                             }
                         });
                     }
@@ -1331,7 +1395,7 @@
 
                     <div id="fc4" data-role="fieldcontain">
                         <label id="label_notes" for="notes">Notes:</label>
-                        <textarea name="notes" id="notes"></textarea>
+                        <textarea name="notes" id="notes" rows="7"></textarea>
                     </div>
 
                     <div id="fc6" class="content-primary">

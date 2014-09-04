@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-var debug_mode = true;
+var debug_mode = false;
 
 function loadScript(src, callback) {
 

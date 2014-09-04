@@ -42,6 +42,8 @@ var app = {
             console.log("socialsharing plugin not available");
         };
 
+        navigator.splashscreen.show();
+
         loadBundles(function () {
             initDb();
         });        

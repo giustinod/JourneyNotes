@@ -133,6 +133,13 @@ module.exports = [
         "clobbers": [
             "window.plugins.socialsharing"
         ]
+    },
+    {
+        "file": "plugins/org.apache.cordova.splashscreen/www/splashscreen.js",
+        "id": "org.apache.cordova.splashscreen.SplashScreen",
+        "clobbers": [
+            "navigator.splashscreen"
+        ]
     }
 ];
 module.exports.metadata = 
@@ -147,7 +154,8 @@ module.exports.metadata =
     "org.apache.cordova.dialogs": "0.2.10-dev",
     "com.phonegap.core.phonedialer": "0.2.0",
     "org.apache.cordova.inappbrowser": "0.5.2-dev",
-    "nl.x-services.plugins.socialsharing": "4.3.2"
+    "nl.x-services.plugins.socialsharing": "4.3.2",
+    "org.apache.cordova.splashscreen": "0.3.3-dev"
 }
 // BOTTOM OF METADATA
 });

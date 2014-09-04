@@ -495,13 +495,13 @@
                                     $(item).data('exportUrl'), 
                                     function() {
                                         if (debug_mode) {
-                                            console.log('share ok');
+                                            console.log('share fb ok');
                                         }
                                     }, 
                                     function(errormsg){
-                                        navigator.notification.alert(
-                                            jQuery.i18n.prop("msg_error", errormsg),
-                                            null, 'JourneyNotes', 'Ok');
+                                        if (debug_mode) {
+                                            console.log('share fb error: ' + errormsg);
+                                        }
                                     }
                                 );
                             }

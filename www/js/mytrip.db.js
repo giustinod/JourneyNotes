@@ -220,6 +220,7 @@ function initDb() {
                             $('#trips_header_content').empty().append($.i18n.prop("trips_header"));                    
                             buildTriplist();
                             addPanel();
+                            navigator.splashscreen.hide();
                         }
                         else {
                             navigator.notification.alert(
@@ -236,6 +237,7 @@ function initDb() {
                     $('#trips_header_content').empty().append($.i18n.prop("trips_header"));                    
                     buildTriplist();
                     addPanel();
+                    navigator.splashscreen.hide();
                 }
             });
         });
