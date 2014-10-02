@@ -42,8 +42,15 @@ var app = {
             console.log("socialsharing plugin not available");
         };
 
-        navigator.splashscreen.show();
-
+        /*
+        if (window.navigator.onLine) {
+            loadScript("https://maps.googleapis.com/maps/api/js?libraries=geometry,places");
+            loadScript("https://apis.google.com/js/client:plusone.js", function () {
+                        getMyTripFolder();
+                    });
+        }
+        */
+       
         loadBundles(function () {
             initDb();
         });        

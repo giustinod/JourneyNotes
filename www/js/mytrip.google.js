@@ -6,7 +6,8 @@ var calendarId;
 
 /**
  * Called when the client library is loaded.
- */
+ * REMOVED if user deletes this directory the app continues to write there
+ *
 function handleClientLoad() {
     
     folderId = localStorage.getItem("mytrip_gdrive_folderid");
@@ -17,6 +18,7 @@ function handleClientLoad() {
         console.log("fid: " + folderId);
     }
 }
+*/
 
 /*
  * 
