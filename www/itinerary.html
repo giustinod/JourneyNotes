@@ -248,7 +248,8 @@
                                 if (debug_mode) {
                                     console.log("pict(" + $(picture).data('description') + "): " + pictStrArray[$(picture).data('description')]);
                                 }
-                                pictDataArray[$(picture).data('picture')] = $(picture).data('pictureUri');
+                                //to be modified
+                                pictDataArray[$(picture).data('picture')] = $(picture).data('rawdata');
                                 photoCount++;
                             }
                             tmpDescr = $(picture).data('description');
@@ -335,6 +336,24 @@
                                 zip = new JSZip();
                                 zip.file(tripname.replace(/ /g, "") + ".kml", kmlOutput);
                                 zip.folder("images");
+                                for (var fn in pictDataArray) {
+                                    var myfilename = fn.substr(0, fn.lastIndexOf('.')) + ".png";
+                                    var prefixRe = new RegExp("^data:image/[^;]+;base64,");
+                                    var bStr = pictDataArray[fn].replace(prefixRe, "");
+                                    if (debug_mode) {
+                                        console.log("adding " + myfilename + " to zip, then uploading");
+                                    }
+                                    zip.file("images/" + myfilename, bStr, {base64: true});
+                                }
+                                if (debug_mode) {
+                                    console.log("generating zip");
+                                }
+                                zipcontent = zip.generate({type: "blob"});     
+                                if (where === 'google') {
+                                    uploadFileGDrive(tripname, tripname.replace(/ /g, "") + ".kmz", zipcontent, 
+                                        "application/vnd.google-earth.kmz");
+                                }
+                                /*
                                 loader(photoCount, pictDataArray, loadPhoto, function () {
                                         if (debug_mode) {
                                             console.log("generating zip");
@@ -345,6 +364,7 @@
                                                 "application/vnd.google-earth.kmz");
                                         }
                                 });
+                                */
                             });
                         }
                         else {
@@ -363,6 +383,7 @@
                 // see http://stackoverflow.com/questions/8682085/can-i-sync-up-multiple-image-onload-calls
                 // loader will 'load' items by calling thingToDo for each item,
                 // before calling allDone when all the things to do have been done.
+                /*
                 function loader(count, items, thingToDo, allDone) {
                     if (debug_mode) {
                         console.log("loader started with count = " + count);
@@ -424,7 +445,7 @@
                         { maxWidth: 600, canvas: true }
                     );
                 }
-                
+                */
                 function onConfirmDeletePlace(buttonIndex) {
                     if (debug_mode) {
                         console.log('You selected button ' + buttonIndex);

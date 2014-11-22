@@ -33,7 +33,7 @@
                                 .order('startDate', true).limit(1)
                                     .forEach(function(item) {
                                         $('#photo_container').empty().append("<img src='" + 
-                                            $(item).data('pictureUri') + "' style='max-width: " +
+                                            $(item).data('rawdata') + "' style='max-width: " +
                                             (window.screen.availWidth * 2 / 3) + "px;'/>" +
                                             "<p>" + $(item).data('description') + "</p>");
                             });                             
