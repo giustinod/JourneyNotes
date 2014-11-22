@@ -91,12 +91,14 @@
 
                                 if (!resp.error) {
                                     for (var idx in resp.items) {
-                                        var option = "<option value='" + resp.items[idx].id + "'>"
-                                            + resp.items[idx].summary + "</option>";
-                                        if (debug_mode) {
-                                            console.log("opt: " + option);
+                                        if (resp.items[idx].id !== "undefined") {
+                                            var option = "<option value='" + resp.items[idx].id + "'>"
+                                                + resp.items[idx].summary + "</option>";
+                                            if (debug_mode) {
+                                                console.log("opt: " + option);
+                                            }
+                                            $('#list_of_calendars').append(option);
                                         }
-                                        $('#list_of_calendars').append(option);
                                     };
                                     if (debug_mode) {
                                         console.log("calendarId: " + calendarId);

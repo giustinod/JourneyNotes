@@ -98,7 +98,7 @@
                         .list(null, function (pictures) {
                             pictures.forEach(function(picture) {
                                 if ($(picture).data('selectedImg') === "1") {
-                                    tripPicture = $(picture).data('pictureUri');
+                                    tripPicture = $(picture).data('rawdata');
                                     dfd.resolve();
                                 }
                             }); 

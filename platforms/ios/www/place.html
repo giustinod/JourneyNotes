@@ -545,6 +545,7 @@
                 
                 function switchTab(which) {
                     
+                    $('#fc-nv').hide();
                     if (which === 0) {
                         $('#fc1').show();
                         $('#fc2').show();
@@ -762,6 +763,8 @@
                     }
                 }
                 
+                //called when sharing
+                //seems to be ok
                 function loadPhoto(imageUrl, pictureName, onComplete) {
 
                     loadImage(
@@ -791,15 +794,18 @@
                     );
                 }
                 
-                function photoToBlob(imageUrl, selected, onSuccess, onError) {
+                //ok
+                function loadBase64Data(input, selected, onSuccess) {
 
-                    loadImage(imageUrl,
+                    if (debug_mode) {
+                        console.log("loadBase64Data called");
+                    }
+                    loadImage(input,
                         function (img) {
                             if (img.type === "error") {
                                 if (debug_mode) {
-                                    console.log("Error loading image " + imageUrl);
+                                    console.log("Error loading image " + input);
                                 }
-                                onError(imageUrl);
                             } 
                             else {
                                 if (debug_mode) {
@@ -828,10 +834,14 @@
                     );
                 }
                 
+                //ok
                 function initGallery() {
                     
+                    if (debug_mode) {
+                        console.log("initGallery called");
+                    }
                     $('#iGallery').empty();
-                    var imgRemoved = [];
+                    //var imgRemoved = [];
                     PlacePicture.all()
                             .filter("tripname", "=", tripname)
                             .filter("startDate", "=", startDate)
@@ -841,8 +851,14 @@
                         var idx = 1;
                         items.forEach(function(item) {
                             
-                            photoToBlob($(item).data('pictureUri'), $(item).data('selectedImg'), 
+                            if (debug_mode) {
+                                console.log("image found: " + $(item).data('picture'));
+                            }
+                            loadBase64Data($(item).data('rawdata'), $(item).data('selectedImg'), 
                                 function (b64data, w, h) {
+                                    if (debug_mode) {
+                                        console.log("onSuccess called " + b64data);
+                                    }
                                     var content = "<li id='li" + idx + "'><a href='flipimage.html?tripname=" + 
                                         tripname + "&startDate=" + startDate + "&pict=" + $(item).data('picture') +
                                         "'><img src='" + b64data + "' style='max-width: 150px;'/></a></li>";
@@ -856,41 +872,16 @@
                                                 pictureUrl = $(item).data('exportUrl');
                                             }
                                             else {
-                                                pictureUrl = $(item).data('pictureUri');
+                                                pictureUrl = $(item).data('rawdata');
                                             }
                                         }
                                     }
                                     $(content).appendTo("#iGallery").enhanceWithin();
-                                },
-                                function (pictureUri) {
-                                    //photo removed from temp storage
-                                    if (debug_mode) {
-                                        console.log("to be removed: " + pictureUri);
-                                    }
-                                    imgRemoved.push(pictureUri);
-                                    persistence.remove(item);
                                 });
                             idx = idx + 1;
                         });
                         if (idx > 1) {
                             $("#iGallery").listview("refresh");
-                        }
-                        if (debug_mode) {
-                            console.log("removing #" + imgRemoved.length + " images");
-                        }
-                        if (imgRemoved.length > 0) {
-                            persistence.flush(null, function(tx) {
-                                if (tx === undefined || tx.toString() === "") {
-                                    if (debug_mode) {
-                                        console.log("removed #" + imgRemoved.length + " images");
-                                    }
-                                }
-                                else {
-                                    if (debug_mode) {
-                                        console.log("error when flushing");
-                                    }
-                                }
-                            });
                         }
                     });
                 }
@@ -1285,7 +1276,7 @@
                 }
                 
                 // A button will call this function
-                //
+                // ok
                 function getPhoto() {
                     
                     PlacePicture.all().filter("tripname", "=", tripname)
@@ -1315,38 +1306,72 @@
                           }
                       });
                 }
-                // Called when a photo is successfully retrieved
+                // Called when a photo is successfully retrieved (ok)
                 //
                 function onPhotoURISuccess(imageURI) {
                     // Uncomment to view the image file URI 
                     if (debug_mode) {
-                        console.log("onPhotoURISuccess::imageURI: " + imageURI);
+                        console.log("onPhotoURISuccess::image URI: " + imageURI);
                     }
                     var pictureName = imageURI.substring(imageURI.lastIndexOf('/') + 1);
-                    //to be saved with a name and showed in gallery
-                    persistence.transaction(function(tx) {
-                        var obj = new PlacePicture({
-                                            tripname: tripname,
-                                            startDate: startDate,
-                                            description: $("#description").val(),
-                                            picture: pictureName,
-                                            selectedImg: pictureSel,
-                                            pictureUri: imageURI
-                                        });
-                        persistence.add(obj);
-                        persistence.flush(tx, function(tx) {
-                            if (tx === undefined || tx.toString() === "") {
-                                initGallery();
-                            }
-                            else {
-                                navigator.notification.alert(
-                                     jQuery.i18n.prop("msg_error", tx),
-                                     null, 'JourneyNotes', 'Ok');
-                            }
+                    loadImageData (imageURI, function (imgData, width, height) {
+                               //to be saved with a name and showed in gallery
+                               //if (debug_mode) {
+                               //     console.log("onPhotoURISuccess::image Data: " + imgData);
+                               //}
+                               persistence.transaction(function(tx) {
+                                    var obj = new PlacePicture({
+                                                    tripname: tripname,
+                                                    startDate: startDate,
+                                                    description: $("#description").val(),
+                                                    picture: pictureName,
+                                                    selectedImg: pictureSel,
+                                                    pictureUri: imageURI,
+                                                    rawdata: imgData
+                                                });
+                                    persistence.add(obj);
+                                    persistence.flush(tx, function(tx) {
+                                        if (tx === undefined || tx.toString() === "") {
+                                            initGallery();
+                                        }
+                                        else {
+                                            navigator.notification.alert(
+                                                    jQuery.i18n.prop("msg_error", tx),
+                                                    null, 'JourneyNotes', 'Ok');
+                                        }
+                                    });
+                                });
                         });
-                    });
                     
                 }
+            
+                //ok
+                function loadImageData(imageUrl, callback) {
+                    
+                    if (debug_mode) {
+                        console.log("loadImageData called for " + imageUrl);
+                    }
+                    loadImage(imageUrl,
+                          function (img) {
+                              if (img.type === "error") {
+                                if (debug_mode) {
+                                    console.log("Error loading image " + imageUrl);
+                                }
+                              }
+                              else {
+                                if (debug_mode) {
+                                    console.log("image dimensions: " + img.width + ", " + img.height);
+                                }
+                                callback(img.toDataURL("image/png"), img.width, img.height);
+                              }
+                          },
+                          {
+                              maxWidth: window.screen.availWidth,
+                              canvas: true
+                          }
+                    );
+                }
+            
                 // Called if something bad happens.
                 // 
                 function onFail(message) {
@@ -1462,6 +1487,10 @@
                         <input type="search" id="search-input" name="search" />
                     </div>
                     <div id="nearby_map_canvas"></div>
+                </div>
+                
+                <div id="fc-nv">
+                    <canvas id="myCanvas" width="578" height="200"></canvas>                    
                 </div>
                 
             </div><!-- /content -->

@@ -230,4 +230,3 @@ function getDateFromField(dt) {
         return dt;
     }
 }
-        

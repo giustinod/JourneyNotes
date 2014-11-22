@@ -59,7 +59,8 @@ var PlacePicture = persistence.define('PlacePicture', {
     picture: "TEXT",
     exportUrl: "TEXT",
     selectedImg: "TEXT",
-    pictureUri: "TEXT"
+    pictureUri: "TEXT",
+    rawdata: "BLOB"
 });
 
 PlacePicture.index(['tripname', 'startDate', 'picture'],{unique:true});

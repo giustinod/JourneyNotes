@@ -5,7 +5,7 @@
 	<key>IDESourceControlProjectFavoriteDictionaryKey</key>
 	<false/>
 	<key>IDESourceControlProjectIdentifier</key>
-	<string>607B94E2-EF55-44F7-8D96-16968CA131E0</string>
+	<string>8FA1FF78-2460-400B-9975-4CFFB8F50E45</string>
 	<key>IDESourceControlProjectName</key>
 	<string>JourneyNotes</string>
 	<key>IDESourceControlProjectOriginsDictionary</key>
@@ -14,7 +14,7 @@
 		<string>https://github.com/giustinod/JourneyNotes.git</string>
 	</dict>
 	<key>IDESourceControlProjectPath</key>
-	<string>platforms/ios/JourneyNotes.xcodeproj/project.xcworkspace</string>
+	<string>platforms/ios/JourneyNotes.xcodeproj</string>
 	<key>IDESourceControlProjectRelativeInstallPathDictionary</key>
 	<dict>
 		<key>6DE96B015785F40F9E34B5D5D11E0BDD3C13FD1B</key>

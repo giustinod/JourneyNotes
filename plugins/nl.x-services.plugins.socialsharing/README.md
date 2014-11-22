@@ -32,7 +32,7 @@ by [@EddyVerbruggen](http://www.twitter.com/eddyverbruggen), [read my blog about
 This plugin allows you to use the native sharing window of your mobile device.
 
 * Works on Android, version 2.3.3 and higher (probably 2.2 as well).
-* Works on iOS6 and iOS7.
+* Works on iOS6 and up.
 * Works on Windows Phone 8 since v4.0 of this plugin (maybe even WP7, but I have no such testdevice).
 * Share text, a link, a images (or other files like pdf or ics). Subject is also supported, when the receiving app supports it.
 * Supports sharing files from the internet, the local filesystem, or from the www folder.
@@ -156,7 +156,7 @@ However, what exactly gets shared, depends on the application the user chooses t
 - Google+ / Hangouts (Android only): message, subject, link
 - Flickr: message, image (an image is required for this option to show up).
 - Facebook iOS: message, image (other filetypes are not supported), link.
-- Facebook Android: sharing a message is not possible. You can share either a link or an image (not both), but a description can not be prefilled. See [this Facebook issue which they won't solve](https://developers.facebook.com/x/bugs/332619626816423/).
+- Facebook Android: sharing a message is not possible. You can share either a link or an image (not both), but a description can not be prefilled. See [this Facebook issue which they won't solve](https://developers.facebook.com/x/bugs/332619626816423/). As an alternative you can use `shareViaFacebookWithPasteMessageHint` since plugin version 4.3.4. See below for details.
 
 ### Using the share sheet
 Here are some examples you can copy-paste to test the various combinations:
@@ -193,23 +193,34 @@ Facebook
 <button onclick="window.plugins.socialsharing.shareViaFacebook('Message via Facebook', null /* img */, null /* url */, function() {console.log('share ok')}, function(errormsg){alert(errormsg)})">msg via Facebook (with errcallback)</button>
 ```
 
+Facebook with prefilled message - as a workaround for [this Facebook Android bug](https://developers.facebook.com/x/bugs/332619626816423/).
+
+* On Android the user will see a Toast message with a message you control (default: "If you like you can paste a message from your clipboard").
+* On iOS this function behaves the same as `shareViaFacebook`.
+```html
+<button onclick="window.plugins.socialsharing.shareViaFacebookWithPasteMessageHint('Message via Facebook', null /* img */, null /* url */, 'Paste it dude!', function() {console.log('share ok')}, function(errormsg){alert(errormsg)})">msg via Facebook (with errcallback)</button>
+```
+
 WhatsApp
 ```html
 <button onclick="window.plugins.socialsharing.shareViaWhatsApp('Message via WhatsApp', null /* img */, null /* url */, function() {console.log('share ok')}, function(errormsg){alert(errormsg)})">msg via WhatsApp (with errcallback)</button>
 ```
 
-SMS (note that on Android SMS via Hangouts may not behave correctly)
+SMS (note that on Android, SMS via Hangouts may not behave correctly)
 ```html
 <!-- Want to share a prefilled SMS text? -->
 <button onclick="window.plugins.socialsharing.shareViaSMS('My cool message', null /* see the note below */, function(msg) {console.log('ok: ' + msg)}, function(msg) {alert('error: ' + msg)})">share via SMS</button>
 <!-- Want to prefill some phonenumbers as well? Pass this instead of null. Important notes: For stable usage of shareViaSMS on Android 4.4 and up you require to add at least one phonenumber! Also, on Android make sure you use v4.0.3 or higher of this plugin, otherwise sharing multiple numbers to non-Samsung devices will fail -->
 <button onclick="window.plugins.socialsharing.shareViaSMS('My cool message', '0612345678,0687654321', function(msg) {console.log('ok: ' + msg)}, function(msg) {alert('error: ' + msg)})">share via SMS</button>
+<!-- Need a subject and even image sharing? It's only supported on iOS for now and falls back to just message sharing on Android -->
+<button onclick="window.plugins.socialsharing.shareViaSMS({'message':'My cool message', 'subject':'The subject', 'image':'https://www.google.nl/images/srpr/logo4w.png'}, '0612345678,0687654321', function(msg) {console.log('ok: ' + msg)}, function(msg) {alert('error: ' + msg)})">share via SMS</button>
 ```
 
-Email - code inspired by the [EmailComposer plugin](https://github.com/katzer/cordova-plugin-email-composer)
+Email - code inspired by the [EmailComposer plugin](https://github.com/katzer/cordova-plugin-email-composer),
+note that this is not supported on the iOS 8 simulator (an alert will be shown if your try to).
 ```js
 window.plugins.socialsharing.shareViaEmail(
-  'Message',
+  'Message', // can contain HTML tags, but support on Android is rather limited:  http://stackoverflow.com/questions/15136480/how-to-send-html-content-with-image-through-android-default-email-client
   'Subject',
   ['to@person1.com', 'to@person2.com'], // TO: must be null or an array
   ['cc@person1.com'], // CC: must be null or an array
@@ -351,6 +362,8 @@ not altered, but with a little extra effort you can use this new popover feature
 The trick is overriding the function `window.plugins.socialsharing.iPadPopupCoordinates` by your own implementation
 to tell the iPad where to show the popup exactly. It need to be a string like "100,200,300,300" (left,top,width,height).
 
+You need to override this method after `deviceready` has fired.
+
 You have various options, like checking the click event on a button and determine the event.clientX and event.clientY,
 or use this code Carlos showed me to grab the coordinates of a static button somewhere on your page:
 
@@ -360,6 +373,10 @@ window.plugins.socialsharing.iPadPopupCoordinates = function() {
   return rect.left + "," + rect.top + "," + rect.width + "," + rect.height;
 };
 ```
+
+Note that since iOS 8 this popup is the only way Apple allows you to share stuff, so this plugin has been adjusted to use this plugin as standard for iOS 8 and positions
+the popup at the bottom of the screen (seems like a logical default because that's where it previously was as well).
+You can however override this position in the same way as explained above.
 
 ## 5. Credits ##
 
