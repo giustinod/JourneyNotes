@@ -1,13 +1,6 @@
 cordova.define('cordova/plugin_list', function(require, exports, module) {
 module.exports = [
     {
-        "file": "plugins/nl.x-services.plugins.socialsharing/www/SocialSharing.js",
-        "id": "nl.x-services.plugins.socialsharing.SocialSharing",
-        "clobbers": [
-            "window.plugins.socialsharing"
-        ]
-    },
-    {
         "file": "plugins/org.apache.cordova.camera/www/CameraConstants.js",
         "id": "org.apache.cordova.camera.Camera",
         "clobbers": [
@@ -126,12 +119,18 @@ module.exports = [
         "clobbers": [
             "Connection"
         ]
+    },
+    {
+        "file": "plugins/nl.x-services.plugins.socialsharing/www/SocialSharing.js",
+        "id": "nl.x-services.plugins.socialsharing.SocialSharing",
+        "clobbers": [
+            "window.plugins.socialsharing"
+        ]
     }
 ];
 module.exports.metadata = 
 // TOP OF METADATA
 {
-    "nl.x-services.plugins.socialsharing": "4.3.10",
     "org.apache.cordova.camera": "0.3.2-dev",
     "org.apache.cordova.console": "0.2.11-dev",
     "org.apache.cordova.device": "0.2.12-dev",
@@ -139,7 +138,8 @@ module.exports.metadata =
     "org.apache.cordova.geolocation": "0.3.10-dev",
     "org.apache.cordova.globalization": "0.3.1-dev",
     "org.apache.cordova.inappbrowser": "0.5.2-dev",
-    "org.apache.cordova.network-information": "0.2.12-dev"
+    "org.apache.cordova.network-information": "0.2.12-dev",
+    "nl.x-services.plugins.socialsharing": "4.3.10"
 }
 // BOTTOM OF METADATA
 });
