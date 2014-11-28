@@ -1220,25 +1220,14 @@
                         console.log('You selected button ' + buttonIndex);
                     }
                     if (buttonIndex === 1) {
-                        phonedialer.dial(number, function(err) {
-                                    if (err === "feature") {
-                                        navigator.notification.alert(
-                                            jQuery.i18n.prop("msg_feature_not_supported"),
-                                            null, 'JourneyNotes', 'Ok');
-                                    }
-                                    if (err === "empty") {
-                                        navigator.notification.alert(
-                                            jQuery.i18n.prop("msg_wrong_phone_number"),
-                                            null, 'JourneyNotes', 'Ok');
-                                    }
-                        });
+                        window.open('tel:' + numberToCall, '_system');
                     }
                 }
 
                 function phoneCall(number) {
                     numberToCall = number;
                     navigator.notification.confirm(
-                        $.i18n.prop("msg_confirm_phone_call", number), // message
+                        $.i18n.prop("msg_confirm_phone_call", numberToCall), // message
                         onConfirmCall,          // callback to invoke with index of button pressed
                         'JourneyNotes',           // title
                         [$.i18n.prop("msg_yes"), $.i18n.prop("msg_no")]     // buttonLabels
