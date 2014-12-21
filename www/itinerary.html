@@ -138,15 +138,19 @@
                     }
                 });
                 
+                function gotoPlace(dt) {
+                    var url = 'place.html?tripname=' + tripname + '&startDate=' + dt + '&tab=0';
+                    $.mobile.changePage(url);
+                }
+                
                 function buildListview() {
                     
                     $("#tripplacelist").empty();
                     TripPlace.all().filter("tripname", "=", tripname).order('startDate', true)
                                 .list(null, function (places) {
                         places.forEach(function(place) {
-                            var content = "<li><a href='place.html?tripname=" +
-                                    $(place).data('tripname') + "&startDate=" +
-                                    $(place).data('startDate') + "&tab=0'>" + 
+                            var content = "<li><a href='javascript:gotoPlace(\"" + 
+                                    $(place).data('startDate').getTime() + "\")'>" + 
                                     $(place).data('description') + 
                                     "</a><a href='javascript:confirmAndDeletePlace(\"" + 
                                     $(place).data('description') + "\", \"" +

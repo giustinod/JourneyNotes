@@ -54,13 +54,13 @@ and open the template in the editor.
                                     lang: localStorage.getItem("mytrip_lang"),
                                     dayClick: function(date, jsEvent, view) {
                                         var url = "place.html?tripname=" + tripname + "&startDate=" 
-                                                + new Date(date) + "&tab=0";
+                                                + new Date(date).getTime() + "&tab=0";
                                         $.mobile.changePage(url);
                                     },
                                     eventClick: function(calEvent, jsEvent, view) {
                                         if (calEvent.textColor === '#FFFFFF') {
                                             var url = "place.html?tripname=" + tripname + "&startDate=" 
-                                                    + new Date(calEvent.start) + "&tab=0";
+                                                    + new Date(calEvent.start).getTime() + "&tab=0";
                                             $.mobile.changePage(url);
                                         }
                                         else {

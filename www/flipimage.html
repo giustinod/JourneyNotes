@@ -37,19 +37,20 @@
     
                 $('#flipimage').on('pageinit', function (e, data) {
                     
-                    $("a#mnu_close").attr('href', 'place.html?tripname=' + tripname + 
-                            "&startDate=" + startDate + "&tab=1");
-                    
                     var parameters = $(this).data("url").split("?")[1];
                     tripname = parameters.split("&")[0].replace("tripname=","");  
-                    startDate = $(this).data("url").split("&")[1].replace("startDate=","");  
+                    var strDt = $(this).data("url").split("&")[1].replace("startDate=","");  
+                    startDate = new Date(parseInt(strDt));
                     pictname = $(this).data("url").split("&")[2].replace("pict=","");  
+                    
+                    $("a#mnu_close").attr('href', 'place.html?tripname=' + tripname + 
+                            "&startDate=" + startDate.getTime() + "&tab=1");
                     
                     //set width and fill container with images
                     fillContainerWithImages();
                     
                     var cancelLink = $("<a id='a_cancel' href='place.html?tripname=" + tripname + 
-                            "&startDate=" + startDate + 
+                            "&startDate=" + startDate.getTime() + 
                             "&tab=1' class='ui-btn ui-btn-inner'><i class='lIcon fa fa-backward'></i></a>");
                     $('#flipimage-controlgroup').append(cancelLink);
                     
@@ -100,7 +101,7 @@
                         persistence.flush(function(tx) { 
                             if (typeof tx === 'undefined' || tx.toString() === "") {
                                 $.mobile.changePage("place.html?tripname=" + tripname + 
-                                        "&startDate=" + startDate + "&tab=1");                                 
+                                        "&startDate=" + startDate.getTime() + "&tab=1");                                 
                             }
                             else {
                                 navigator.notification.alert(
@@ -127,7 +128,7 @@
                             persistence.flush(tx, function(tx1) { 
                                 if (tx1 === undefined || tx1.toString() === "") {
                                     $.mobile.changePage("place.html?tripname=" + tripname + 
-                                            "&startDate=" + startDate + "&tab=1");                                 
+                                            "&startDate=" + startDate.getTime() + "&tab=1");                                 
                                 }
                                 else {
                                     navigator.notification.alert(
@@ -204,30 +205,6 @@
                             }
                     });                    
                 }
-                /*
-                function loadPhotos(imageUrl, callback) {
-
-                    loadImage(imageUrl,
-                        function (img) {
-                            if (img.type === "error") {
-                                if (debug_mode) {
-                                    console.log("Error loading image " + imageUrl);
-                                }
-                            } 
-                            else {
-                                if (debug_mode) {
-                                    console.log("image dimensions: " + img.width + ", " + img.height);
-                                }
-                                callback(img.toDataURL("image/png"), img.width, img.height);
-                            }
-                        }, 
-                        { 
-                            maxWidth: window.screen.availWidth,
-                            canvas: true 
-                        }
-                    );
-                }
-                */
             </script>
             
             <div data-role="panel" data-position-fixed="true" id="mypanel" data-theme="b">

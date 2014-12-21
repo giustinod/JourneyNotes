@@ -47,8 +47,6 @@
                         {formatLength:'short', selector:'date'}
                     );
             
-                    buildTable();
-                    
                     $('#trip_expenses_title').empty().append($.i18n.prop("expenses_header"));
                     
                     var cancelLink = "<a id='a_back' href='trip.html?tripname=" + tripname
@@ -58,6 +56,7 @@
                             "' class='ui-btn ui-btn-inner'><i class='lIcon fa fa-plus'></i></a>";
                     $('#tripexpenses-header-controlgroup').append(addLink);
                     
+                    buildTable();
                     addPanel();
                 });
 
@@ -66,33 +65,32 @@
                     var grandtotal = 0;
                     TripExpense.all().filter("tripname", "=", tripname)
                             .order("eDate", false)
-                                .list(null, function (items) {
+                            .list(null, function (items) {
                         $("#expenses-table > tbody").empty();
                         items.forEach(function(item) {
-                            var content = "";
                             var mydate = null;
                             if (typeof $(item).data('eDate') === 'string') {
-                                mydate = new Date($(item).data('eDate')).toString(date_pattern);
+                                mydate = new Date($(item).data('eDate'));
                             }
                             else {
-                                mydate = $(item).data('eDate').toString(date_pattern);
+                                mydate = $(item).data('eDate');
                             }
-                            content = content 
-                                + "<tr><td><a href='javascript:confirmAndDelete(\""
+                            var content = "<tr><td><a href='javascript:confirmAndDelete(\""
                                 + tripname + "\", \"" + $(item).data('expcategory')
                                 + "\", \"" + $(item).data('description')
-                                + "\", \"" + $(item).data('eDate')
+                                + "\", \"" + mydate
                                 + "\")' class='ui-btn ui-icon-delete ui-btn-icon-notext ui-corner-all'>Delete</a></td>"
                                 + "<td><a href='trip_expense.html?tripname="
                                 + tripname + "&expcategory=" + $(item).data('expcategory')
                                 + "&description=" + $(item).data('description') + "&eDate=" 
-                                + $(item).data('eDate') + "' >" 
-                                + $(item).data('description') + "</a></td>" 
-                                + "<td>" + mydate + "</td>"
-                                + "<td style='text-align:left;'>" + $(item).data('place') + "</td>"
+                                + mydate.getTime() + "' >" 
+                                + $(item).data('description') + "</a></td>"
+                                + "<td>" + mydate.toString(date_pattern) + "</td>"
+                                + "<td style='text-align:left;'>" + $(item).data('place') + "</td>" 
                                 + "<td style='text-align:left;'>" + $(item).data('expcategory') + "</td>"
-                                + "<td style='text-align:right;'>" + $(item).data('amount') + "</td>";
+                                + "<td style='text-align:right;'>" + $(item).data('amount') + "</td></tr>";
                             $("#expenses-table > tbody").append(content);
+                            //$("#expenses-table").table("refresh");
                             grandtotal = grandtotal + $(item).data('amount');
                         });
                         var lastrow = "<tr><td>&nbsp;</td><td style='font-weight:bold;'>"
@@ -162,13 +160,13 @@
                         items.forEach(function(item) {
                             var mydate = null;
                             if (typeof $(item).data('eDate') === 'string') {
-                                mydate = new Date($(item).data('eDate')).toString(date_pattern);
+                                mydate = new Date($(item).data('eDate'));
                             }
                             else {
-                                mydate = $(item).data('eDate').toString(date_pattern);
+                                mydate = $(item).data('eDate');
                             }
                             csvContent = csvContent 
-                                + mydate + ","
+                                + mydate.toString(date_pattern) + ","
                                 + $(item).data('description') + "," 
                                 + $(item).data('place') + "," 
                                 + $(item).data('expcategory') + ","
@@ -200,7 +198,7 @@
             <div data-role="content">
 	        <div class='inset'>
                 
-                    <table data-role="table" id="expenses-table" data-mode="columntoggle" class="ui-responsive table-stroke" >
+                    <table data-role="table" id="expenses-table" data-mode="columntoggle" class="ui-responsive" >
                         <thead>
                             <tr>
                                 <th>&nbsp;</th>

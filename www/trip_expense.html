@@ -69,7 +69,8 @@
                     if (parameters.split("&")[1] !== undefined) {
                         expcategory = parameters.split("&")[1].replace("expcategory=","");  
                         description = parameters.split("&")[2].replace("description=","");  
-                        eDate = parameters.split("&")[3].replace("eDate=","");  
+                        var strDt = parameters.split("&")[3].replace("eDate=","");  
+                        eDate = new Date(parseInt(strDt));  
 
                         TripExpense.all().filter("tripname", "=", tripname)
                                 .filter("expcategory", "=", expcategory)
@@ -236,7 +237,7 @@
 
                     <div data-role="fieldcontain">
                         <label id="label_date" for="eDate">Date:</label>
-                        <input type="datetime-local" name="eDate" id="eDate" />
+                        <input type="datetime-local" data-clear-btn="false" name="eDate" id="eDate" />
                     </div>
                     
                     <div data-role="fieldcontain">
