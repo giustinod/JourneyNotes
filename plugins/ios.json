@@ -7,18 +7,8 @@
         "files": {
             "framework": {
                 "parents": {
-                    "Social.framework": [
-                        {
-                            "xml": "true",
-                            "count": 1
-                        }
-                    ],
-                    "MessageUI.framework": [
-                        {
-                            "xml": "true",
-                            "count": 1
-                        }
-                    ],
+                    "Social.framework": [],
+                    "MessageUI.framework": [],
                     "ImageIO.framework": [
                         {
                             "xml": "true",
@@ -97,10 +87,6 @@
                         {
                             "xml": "<feature name=\"NetworkStatus\"><param name=\"ios-package\" value=\"CDVConnection\" /></feature>",
                             "count": 1
-                        },
-                        {
-                            "xml": "<feature name=\"SocialSharing\"><param name=\"ios-package\" value=\"SocialSharing\" /><param name=\"onload\" value=\"true\" /></feature>",
-                            "count": 1
                         }
                     ]
                 }
@@ -130,9 +116,6 @@
             "PACKAGE_NAME": "com.dotg.JourneyNotes"
         },
         "org.apache.cordova.network-information": {
-            "PACKAGE_NAME": "com.dotg.JourneyNotes"
-        },
-        "nl.x-services.plugins.socialsharing": {
             "PACKAGE_NAME": "com.dotg.JourneyNotes"
         }
     },

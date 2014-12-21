@@ -1,0 +1,1511 @@
+
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>JourneyNotes</title>
+    </head>
+    <body>
+        <div id="place-item" data-role="page">
+
+            <style scoped>
+                /*
+                 * iPad media queries
+                 */
+                @media only screen 
+                    and (min-device-width: 768px) 
+                    and (max-device-width: 1024px) 
+                    and (orientation: landscape) {
+                    #nearby_map_canvas {
+                        padding: 0;
+                        margin: 0;
+                        height: 600px; 
+                        width: 100%;                      
+                    }
+                    #search-box {
+                        position: absolute;
+                        padding: 0;
+                        margin: 0;
+                        top: 15px;
+                        left: 40px;
+                        width: 250px;
+                        z-index: 2;
+                    }
+                    #weathermap_canvas {
+                        padding: 0;
+                        margin: 0;
+                        height: 480px; 
+                        width: 100%;                      
+                    }
+                    .ui-input-search { padding: 0 0px; margin: 0; width: 100%; background-position: 8px 50%; background-repeat: no-repeat; position: relative; }
+                    .ui-grid-a .ui-block-a { width: 40%; }
+                    .ui-grid-a .ui-block-b { width: 60%; }     
+                }
+
+                @media only screen 
+                    and (min-device-width: 768px) 
+                    and (max-device-width: 1024px) 
+                    and (orientation: portrait) {
+                    #nearby_map_canvas {
+                        padding: 0;
+                        margin: 0;
+                        height: 840px; 
+                        width: 100%;                      
+                    }
+                    #search-box {
+                        position: absolute;
+                        padding: 0;
+                        margin: 0;
+                        top: 15px;
+                        left: 40px;
+                        width: 250px;
+                        z-index: 2;
+                    }
+                    #weathermap_canvas {
+                        padding: 0;
+                        margin: 0;
+                        height: 480px; 
+                        width: 100%;                      
+                    }
+                    .ui-input-search { padding: 0 0px; margin: 0; width: 100%; background-position: 8px 50%; background-repeat: no-repeat; position: relative; }
+                    .ui-grid-a .ui-block-a { width: 40%; }
+                    .ui-grid-a .ui-block-b { width: 60%; }     
+                }
+
+                /*
+                 * All Smartphones in portrait and landscape
+                 */
+                @media only screen and (min-device-width: 320px) and (max-device-width: 480px) {
+                    #nearby_map_canvas {
+                        padding: 0;
+                        margin: 0;
+                        height: 320px; 
+                        width: 100%;                      
+                    }
+                    #search-box {
+                        position: absolute;
+                        padding: 0;
+                        margin: 0;
+                        top: 15px;
+                        left: 40px;
+                        width: 150px;
+                        z-index: 2;
+                    }
+                    //.ui-input-search { width: 100% !important; }
+                    .ui-input-search { padding: 0 0px; margin: 0; width: 100%; background-position: 8px 50%; background-repeat: no-repeat; position: relative; }
+                    .ui-grid-a .ui-block-a { width: 85%; }
+                    .ui-grid-a .ui-block-b { width: 15%; }     
+                }
+
+                /*
+                 * iPhone 5
+                 */
+                @media screen and (device-aspect-ratio: 40/71) and (max-device-width: 640px) {
+                    #nearby_map_canvas {
+                        padding: 0;
+                        margin: 0;
+                        height: 420px; 
+                        width: 100%;                      
+                    }
+                    #search-box {
+                        position: absolute;
+                        padding: 0;
+                        margin: 0;
+                        top: 15px;
+                        left: 40px;
+                        width: 150px;
+                        z-index: 2;
+                    }
+                    //.ui-input-search { width: 100% !important; }
+                    .ui-input-search { padding: 0 0px; margin: 0; width: 100%; background-position: 8px 50%; background-repeat: no-repeat; position: relative; }
+                    .ui-grid-a .ui-block-a { width: 85%; }
+                    .ui-grid-a .ui-block-b { width: 15%; }     
+                }
+
+                #iGallery       {list-style:none; padding:0px; margin:0px}
+                #iGallery li	{list-style:none; padding:1px; margin:1px; float:left;}
+                
+                iframe {
+                    border: none;
+                }
+
+                .weather-list thead th,
+                .weather-list tbody tr:last-child {
+                    border-bottom: 1px solid #d6d6d6; /* non-RGBA fallback */
+                    border-bottom: 1px solid rgba(0,0,0,.1);
+                }
+                .weather-list tbody th,
+                .weather-list tbody td {
+                    border-bottom: 1px solid #e6e6e6; /* non-RGBA fallback  */
+                    border-bottom: 1px solid rgba(0,0,0,.05);
+                }
+                .weather-list tbody tr:last-child th,
+                .weather-list tbody tr:last-child td {
+                    border-bottom: 0;
+                }
+                .weather-list tbody tr:nth-child(odd) td,
+                .weather-list tbody tr:nth-child(odd) th {
+                    background-color: #eeeeee; /* non-RGBA fallback  */
+                    background-color: rgba(0,0,0,.04);
+                }
+                #weather-head h1 { display: inline; }
+                #weather-head img { vertical-align: middle; }
+            </style>
+            
+            <script type="text/javascript">
+
+                var pictureBuf;
+                var pictureName;
+                var pictureUrl = null;
+                var selPictureName = null;
+                var myblob = null;
+                var tripname;
+                var startDate;
+                var itemObj;
+                var lat;
+                var lng;
+                var maxPicturesNo = 0;
+                var pictureSel = "0";
+                var locale;
+                var refsys;
+                var deg;                
+                var gMapsScriptLoaded = false;
+                var pictureSource;   // picture source
+                var destinationType; // sets the format of returned value 
+                var numberToCall;
+                var mapInfo;
+                var markersArray = [];
+    
+                $('#place-item').on('pageinit', function (e, data) {
+
+                    pictureBuf = null;
+                    pictureSource = navigator.camera.PictureSourceType;
+                    destinationType = navigator.camera.DestinationType;
+                    maxPicturesNo = localStorage.getItem("mytrip_max_no_img_per_place");
+
+                    var parameters = $(this).data("url").split("?")[1];
+                    tripname = parameters.split("&")[0].replace("tripname=","");  
+                    var strDt = parameters.split("&")[1].replace("startDate=","");  
+                    if (parseInt(strDt) > 1000) {
+                        startDate = new Date(parseInt(strDt));
+                    }
+                    else {
+                        startDate = new Date();
+                    }
+                    var ptab = parameters.split("&")[2].replace("tab=","");  
+                    if (typeof ptab === 'undefined' || ptab === "") {
+                        ptab = "0";
+                    }
+                    if (debug_mode) {
+                        console.log("place tab: " + ptab);
+                    }
+                    if (typeof google.maps !== 'undefined') {  
+                        gMapsScriptLoaded = true;
+                    }
+                    itemObj = null;
+                    $("#sDate").val(startDate);
+                    TripPlace.all().filter("tripname", "=", tripname)
+                        .filter("startDate", "=", startDate).limit(1)
+                            .forEach(function(item) {
+                            
+                                itemObj = item;
+                                $("#description").val($(item).data('description'));
+                                $('#place_title').empty().append($(item).data('description'));
+                                lat = $(item).data('locationx');
+                                lng = $(item).data('locationy');
+                                //alert("setting coordinates");
+                                localStorage.setItem("mytrip_place_lat", lat);
+                                localStorage.setItem("mytrip_place_lng", lng);
+                                $("#sDate").val($(item).data('startDate').toString('yyyy-MM-ddThh:mm'));
+                                $("#eDate").val($(item).data('endDate').toString('yyyy-MM-ddThh:mm'));
+                                $("#notes").val($(item).data('notes'));
+                    });
+                    
+                    $('a#a_details').empty().append(jQuery.i18n.prop("details"));
+                    $('a#a_diary').empty().append(jQuery.i18n.prop("diary"));                    
+                    $('a#a_weather').empty().append(jQuery.i18n.prop("weather"));                    
+                    $('a#a_nearby').empty().append(jQuery.i18n.prop("nearby"));
+                    $('a#a_map').empty().append(jQuery.i18n.prop("map_header"));
+                    $('#label_description').empty().append(jQuery.i18n.prop("label_description"));       
+                    $('#label_arr_date').empty().append(jQuery.i18n.prop("label_arr_date"));       
+                    $('#label_notes').empty().append(jQuery.i18n.prop("label_notes"));       
+                    $('#label_gallery').empty().append(jQuery.i18n.prop("label_gallery"));       
+                    $('#label_dep_date').empty().append(jQuery.i18n.prop("label_dep_date"));       
+                    $('#collapsible_weather_tab').empty().append(jQuery.i18n.prop("collapsible_weather_tab"));       
+                    
+                    var saveLink = $("<a href='#' class='ui-btn ui-btn-inner'><i class='lIcon fa fa-save'></i></a>")
+                        .click(function(e) {
+                            if ($("#description").val() === "" || $("#sDate").val() === ""
+                                 || $("#eDate").val() === "" || $("#sDate").val() > $("#eDate").val()) {
+                                navigator.notification.alert(
+                                     jQuery.i18n.prop("msg_missing_desc_or_date"),
+                                     null, 'JourneyNotes', 'Ok');
+                            }
+                            else
+                            {
+                                if (gMapsScriptLoaded && navigator.connection.type !== Connection.NONE) {  
+                                    geocodeAndSave();
+                                }
+                                else {
+                                    savePlace();
+                                }
+                            }
+                        });
+
+                    
+                    var cancelLink = "<a id='a_back' href='itinerary.html?tripname=" + tripname
+                             + "' class='ui-btn ui-btn-inner'><i class='lIcon fa fa-backward'></i></a>";
+                    $('#place-header-controlgroup').append(cancelLink);
+                    $('#place-header-controlgroup').append(saveLink);
+                    //document.getElementById('pict-sel').addEventListener('change', handleFileSelect, false);
+                    
+                    navigator.globalization.getLocaleName(
+                        function (locale) {
+                            if (locale.value.substring(0, 2) === 'en') {
+                                refsys = "imperial";
+                                if (locale === "en_US") {
+                                    deg = " °F";
+                                }
+                                else {
+                                    deg = " °C";
+                                }
+                            }
+                            else {
+                                refsys = "metric";
+                                deg = " °C";
+                            }
+                        });
+                                       
+                    $("#search-input").on('change', function (e, data) {
+                        clearOverlays();
+                        if ($("#search-input").val() !== "") {
+                            if (debug_mode) {
+                                console.log( "Query " + $("#search-input").val() );
+                            }
+                            searchWikipedia($("#search-input").val());
+                            searchPlaces($("#search-input").val());
+                            searchFoursquare($("#search-input").val());
+                            $("#search-input").blur();
+                        }
+                    });
+
+                    /*
+                     * show popup weather map only if using mobile device
+                     */
+                    var userAgent = navigator.userAgent.toLowerCase();
+                    if((navigator.userAgent.match(/(iPhone)|(iPod)/i)) ||
+                        (userAgent.search("android") > -1) && (userAgent.search("mobile") > -1)) {
+                        $( ".ui-popup iframe" )
+                            .attr( "width", 0 )
+                            .attr( "height", "auto" );
+                        $( "#popupMap iframe" ).contents().find( "#map_canvas" )
+                            .css( { "width" : 0, "height" : 0 } );
+                        $( "#popupMap" ).on({
+                            popupbeforeposition: function() {
+                                var size = scale( 480, 640, 0, 1 ),
+                                    w = size.width,
+                                    h = size.height;
+                                $( "#popupMap iframe" )
+                                    .attr( "width", w )
+                                    .attr( "height", h );
+                                $( "#popupMap iframe" ).contents().find( "#map_canvas" )
+                                    .css( { "width": w, "height" : h } );
+                            },
+                            popupafterclose: function() {
+                                $( "#popupMap iframe" )
+                                    .attr( "width", 0 )
+                                    .attr( "height", 0 );
+                                $( "#popupMap iframe" ).contents().find( "#map_canvas" )
+                                    .css( { "width": 0, "height" : 0 } );
+                            }
+                        });
+                    }
+
+                    setTimeout(function () {
+                        $('#notes').css({
+                            'height': 'auto'
+                        });
+                        addPanel();
+                        switchTab(parseInt(ptab));
+                    }, 0);
+                });
+
+                $(document).on('focus', 'input, textArea', function () {
+                    $('div[data-role="footer"]').hide();
+                })  
+
+                $(document).on('blur', 'input, textarea', function() {
+                    setTimeout(function() {
+                        window.scrollTo(document.body.scrollLeft, document.body.scrollTop);
+                        $('div[data-role="footer"]').show();
+                    }, 0);
+                });
+                
+                function clearOverlays() {
+                    for (var i = 0; i < markersArray.length; i++ ) {
+                        markersArray[i].setMap(null);
+                    }
+                    markersArray.length = 0;
+                } 
+
+                function geocodeAndSave() {
+                    
+                    geocoder = new google.maps.Geocoder();
+                    if ($("#description").val() !== "") {
+                        geocoder.geocode( { 'address': $("#description").val()}, function(results, status) {
+                            if (status === google.maps.GeocoderStatus.OK) {
+
+                                lng = results[0].geometry.location.lng();
+                                lat = results[0].geometry.location.lat();
+                                savePlace();
+                            } 
+                            else {
+                                navigator.notification.alert(
+                                     jQuery.i18n.prop("msg_geocode_error", status),
+                                     null, 'JourneyNotes', 'Ok');
+                            }
+                        });
+                    }
+                }
+
+                function savePlace() {
+
+                    persistence.transaction(function(tx) {
+
+                        if (itemObj === null) {
+                            
+                            itemObj = new TripPlace({tripname: tripname, 
+                                description: $("#description").val(),
+                                locationx: lat,
+                                locationy: lng,
+                                startDate: $("#sDate").val(),
+                                endDate: $("#eDate").val(),
+                                updated: new Date(),
+                                notes: $("#notes").val()}); 
+                            persistence.add(itemObj);
+                        }
+                        else {
+                            $(itemObj).data('description', $("#description").val());
+                            $(itemObj).data('locationx', lat);
+                            $(itemObj).data('locationy', lng);
+                            if ($(itemObj).data('startDate') !== $("#sDate").val()) {
+                                //update startDate for all pictures
+                                //alert("db dt: " + $(itemObj).data('startDate') + ", ui dt: " + $("#sDate").val());
+                                PlacePicture.all().filter("tripname", "=", tripname)
+                                    .filter("startDate", "=", startDate)
+                                    .forEach(function(pict) {
+                                        $(pict).data('startDate', $("#sDate").val());
+                                });
+                            }
+                            $(itemObj).data('startDate', $("#sDate").val());
+                            $(itemObj).data('endDate', $("#eDate").val());
+                            $(itemObj).data('notes', $("#notes").val());
+                            $(itemObj).data('updated', new Date());
+                        }
+                        persistence.flush(tx, function(tx1) {
+                            if (tx1 === undefined || tx1.toString() === "") {
+                                navigator.notification.alert(
+                                     jQuery.i18n.prop("msg_saved", $("#description").val()),
+                                     function () {
+                                        $.mobile.changePage("itinerary.html?tripname=" + tripname);
+                                     }, 'JourneyNotes', 'Ok');
+                            }
+                            else {
+                                navigator.notification.alert(
+                                    jQuery.i18n.prop("msg_error", tx1),
+                                    null, 'JourneyNotes', 'Ok');
+                            }
+                        });
+                    });
+                }
+                
+                function sharePlaceOnFacebook() {
+                    
+                    if (gMapsScriptLoaded && navigator.connection.type !== Connection.NONE) {  
+                        window.plugins.socialsharing.shareViaFacebook(
+                            $("#description").val() + "\n" + $("#notes").val(), 
+                            myblob,
+                            null
+                        );
+                    }
+                    else {
+                        navigator.notification.alert(
+                            jQuery.i18n.prop("msg_not_online"),
+                            null, 'JourneyNotes', 'Ok');
+                    }
+                }
+                
+                function sharePlaceOnTwitter() {
+                    
+                    if (gMapsScriptLoaded && navigator.connection.type !== Connection.NONE) {  
+                        window.plugins.socialsharing.shareViaTwitter(
+                            $("#description").val() + "\n" + $("#notes").val(), 
+                            myblob,
+                            null
+                        );
+                    }
+                    else {
+                        navigator.notification.alert(
+                            jQuery.i18n.prop("msg_not_online"),
+                            null, 'JourneyNotes', 'Ok');
+                    }
+                }
+
+                function sharePlaceOnGooglePlus() {
+                    
+                    if (gMapsScriptLoaded && navigator.connection.type !== Connection.NONE) {  
+                        var mylink = null;
+                        if (pictureUrl !== null) {
+                            if (pictureUrl.indexOf("http") > -1) {
+                                mylink = pictureUrl.substring(0, pictureUrl.indexOf("edit") - 1);
+                                if (debug_mode) {
+                                    console.log("mylink: " + mylink);
+                                }
+                                window.open('https://plus.google.com/share?url=' + mylink, '_blank', 'location=yes');
+                            }
+                            else {
+                                if (debug_mode) {
+                                    console.log("loading photo: " + pictureUrl);
+                                }
+                                loadPhoto(pictureUrl, selPictureName, function (exportUrl) {
+                                    pictureUrl = exportUrl;
+                                    mylink = pictureUrl.substring(0, pictureUrl.indexOf("edit") - 1);
+                                    if (debug_mode) {
+                                        console.log("found item, mylink: " + mylink);
+                                    }
+                                    window.open('https://plus.google.com/share?url=' + mylink, '_blank', 'location=yes');
+                                });
+                            }
+                        }
+                        else {
+                            window.open('https://plus.google.com/share?url=', '_blank', 'location=yes');
+                        }
+                    }
+                    else {
+                        navigator.notification.alert(
+                            jQuery.i18n.prop("msg_not_online"),
+                            null, 'JourneyNotes', 'Ok');
+                    }
+                }
+                
+                function sharePlaceByMail() {
+                    
+                    if (gMapsScriptLoaded && navigator.connection.type !== Connection.NONE) {  
+                        
+                        var mylink = null;
+                        if (pictureUrl !== null) {
+                            if (pictureUrl.indexOf("http") > -1) {
+                                mylink = "\n\nPhoto: " + pictureUrl;
+                                if (debug_mode) {
+                                    console.log("mylink: " + mylink);
+                                }
+                                window.plugins.socialsharing.shareViaEmail(
+                                    $("#notes").val() + mylink,
+                                    $("#description").val(),
+                                    null, // TO: must be null or an array
+                                    null, // CC: must be null or an array
+                                    null, // BCC: must be null or an array
+                                    null, // FILES: can be null, a string, or an array
+                                    function () { if (debug_mode) { console.log("mail sent"); } }, // called when sharing worked, but also when the user cancelled sharing via email (I've found no way to detect the difference)
+                                    function () { if (debug_mode) { console.log("error sending mail"); } } // called when sh*t hits the fan
+                                );
+                            }
+                            else {
+                                if (debug_mode) {
+                                    console.log("loading photo: " + pictureUrl);
+                                }
+                                loadPhoto(pictureUrl, selPictureName, function (exportUrl) {
+                                    pictureUrl = exportUrl;
+                                    mylink = "\n\nPhoto: " + exportUrl;
+                                    if (debug_mode) {
+                                        console.log("mylink: " + mylink);
+                                    }
+                                    window.plugins.socialsharing.shareViaEmail(
+                                        $("#notes").val() + mylink,
+                                        $("#description").val(),
+                                        null, // TO: must be null or an array
+                                        null, // CC: must be null or an array
+                                        null, // BCC: must be null or an array
+                                        null, // FILES: can be null, a string, or an array
+                                        function () { if (debug_mode) { console.log("mail sent"); } }, // called when sharing worked, but also when the user cancelled sharing via email (I've found no way to detect the difference)
+                                        function () { if (debug_mode) { console.log("error sending mail"); } } // called when sh*t hits the fan
+                                    );
+                                });
+                            }
+                        }
+                        else {
+                            window.plugins.socialsharing.shareViaEmail(
+                                $("#notes").val(),
+                                $("#description").val(),
+                                null, // TO: must be null or an array
+                                null, // CC: must be null or an array
+                                null, // BCC: must be null or an array
+                                null, // FILES: can be null, a string, or an array
+                                function () { if (debug_mode) { console.log("mail sent"); } }, // called when sharing worked, but also when the user cancelled sharing via email (I've found no way to detect the difference)
+                                function () { if (debug_mode) { console.log("error sending mail"); } } // called when sh*t hits the fan
+                            );
+                        }
+                    }
+                    else {
+                        navigator.notification.alert(
+                            jQuery.i18n.prop("msg_not_online"),
+                            null, 'JourneyNotes', 'Ok');
+                    }
+                }
+                
+                function switchTab(which) {
+                    
+                    $('#fc-nv').hide();
+                    if (which === 0) {
+                        $('#fc1').show();
+                        $('#fc2').show();
+                        $('#fc3').hide();
+                        $('#fc4').hide();
+                        $('#fc6').hide();
+                        $('#fc7').show();
+                        $('#fc9').hide();
+                        $('#fc10').hide();
+                        $('#fc12').hide();
+                        $('#fc13').hide();
+                        $('#fc14').hide();
+                        $('#weathermap_canvas').hide();
+                        $('#fc11').hide();
+                    }
+                    else if (which === 1) {
+                        initGallery();
+                        $('#fc1').hide();
+                        $('#fc2').hide();
+                        $('#fc3').show();
+                        $('#fc4').show();
+                        $('#fc6').show();
+                        $('#fc7').hide();
+                        $('#fc9').hide();
+                        $('#fc10').hide();
+                        $('#fc12').hide();
+                        $('#fc13').hide();
+                        $('#fc14').hide();
+                        $('#weathermap_canvas').hide();
+                        $('#fc11').hide();
+                        $('#a_diary').addClass('ui-btn-active ui-state-persist');
+                        $('#a_details').removeClass('ui-btn-active ui-state-persist');
+                        $('#a_weather').removeClass('ui-btn-active ui-state-persist');
+                        $('#a_nearby').removeClass('ui-btn-active ui-state-persist');
+                    }
+                    else if (which === 2) {  
+                        //...
+                        if (gMapsScriptLoaded && navigator.connection.type !== Connection.NONE) {  
+                            $('#fc1').hide();
+                            $('#fc2').hide();
+                            $('#fc3').hide();
+                            $('#fc4').hide();
+                            $('#fc6').hide();
+                            $('#fc7').hide();
+                            $('#fc9').hide();
+                            $('#fc10').hide();
+                            $('#fc12').hide();
+                            $('#fc13').hide();
+                            $('#fc14').hide();
+                            $('#weathermap_canvas').hide();
+                            $('#fc11').show();                            
+                            var center = new google.maps.LatLng(lat, lng);
+                            var mapOptions = {
+                                zoom: 13,
+                                center: center
+                            };
+                            mapInfo = new google.maps.Map(document.getElementById( "nearby_map_canvas" ), mapOptions);
+                            navigator.geolocation.getCurrentPosition(
+                                function (position) {
+                                    var youAreHere = new google.maps.LatLng(position.coords.latitude, position.coords.longitude);
+                                    var marker = new google.maps.Marker({
+                                        position: youAreHere,
+                                        title: $.i18n.prop("msg_you_are_here"),
+                                        map: mapInfo,
+                                        zIndex: Math.round(youAreHere.lat()*-100000)<<5
+                                    });
+                                });
+                        }
+                        else {
+                            navigator.notification.alert(
+                                jQuery.i18n.prop("msg_not_online"),
+                                null, 'JourneyNotes', 'Ok');
+                        }
+                    }
+                    else {
+                        if (gMapsScriptLoaded && navigator.connection.type !== Connection.NONE) {  
+                            $('#fc1').hide();
+                            $('#fc2').hide();
+                            $('#fc3').hide();
+                            $('#fc4').hide();
+                            $('#fc6').hide();
+                            $('#fc7').hide();
+                            $('#fc9').show();
+                            $('#fc10').show();
+                            $('#fc12').show();
+                            $('#fc13').show();
+                            //test device
+                            var userAgent = navigator.userAgent.toLowerCase();
+                            if((navigator.userAgent.match(/(iPhone)|(iPod)/i)) ||
+                                (userAgent.search("android") > -1) && (userAgent.search("mobile") > -1)) {
+                                $('#fc14').show();
+                                $('#weathermap_canvas').hide();
+                            }
+                            else {
+                                $('#fc14').hide();
+                                $('#weathermap_canvas').show();
+                            }
+                            $('#fc11').hide();
+                        }
+                        else {
+                            navigator.notification.alert(
+                                jQuery.i18n.prop("msg_not_online"),
+                                null, 'JourneyNotes', 'Ok');
+                        }
+                    }
+                    return false;
+                }
+                
+                $('#a_details').bind('click', function(e) 
+                {   
+                    e.preventDefault();
+                    switchTab(0);
+                });                
+                
+                $('#a_diary').bind('click', function(e) 
+                {   
+                    e.preventDefault();
+                    if (itemObj === null) {
+                        navigator.notification.alert(
+                             jQuery.i18n.prop("msg_save_first"),
+                             null, 'JourneyNotes', 'Ok');
+                    }
+                    else {
+                        switchTab(1);
+                    }
+                });                
+                
+                $('#a_nearby').bind('click', function(e) 
+                {   
+                    e.preventDefault();
+                    if (itemObj === null) {
+                        navigator.notification.alert(
+                             jQuery.i18n.prop("msg_save_first"),
+                             null, 'JourneyNotes', 'Ok');
+                    }
+                    else {
+                        switchTab(2);
+                    }
+                });                
+                
+                $('#a_weather').bind('click', function(e) 
+                {   
+                    e.preventDefault();
+                    if (itemObj === null) {
+                        navigator.notification.alert(
+                             jQuery.i18n.prop("msg_save_first"),
+                             null, 'JourneyNotes', 'Ok');
+                    }
+                    else {
+                        switchTab(3);
+                        initWeather();
+                    }
+                });                
+                
+                function getPosition () {
+                    
+                    if ($("#description").val() === "") {
+                        
+                        navigator.geolocation.getCurrentPosition(
+                            function (position) {
+                                lat = position.coords.latitude;
+                                lng = position.coords.longitude;
+                                localStorage.setItem("mytrip_place_lat", lat);
+                                localStorage.setItem("mytrip_place_lng", lng);
+                                if ($("#sDate").val() === "") {
+                                    $("#sDate").val(new Date().toString('yyyy-MM-ddThh:mm'));
+                                }
+                                var youAreHere = new google.maps.LatLng(lat, lng);
+                                var geocoder = new google.maps.Geocoder();
+                                geocoder.geocode({'latLng': youAreHere}, function(results, status) {
+                                    if (status === google.maps.GeocoderStatus.OK) {
+                                        if (results[1]) {
+                                            for (var i = 0; i < results.length; i++) {
+                                                var place = results[i];
+                                                var addressComponents = place.address_components;
+                                                for (var a = 0; a < addressComponents.length; a++) {
+                                                    var comp = addressComponents[a];
+                                                    if (debug_mode) {
+                                                        console.log("address " + JSON.stringify(comp));
+                                                    }
+                                                    if (comp.types[0] === "administrative_area_level_3") {
+                                                        $("#description").val(comp.long_name);
+                                                        $('#place_title').empty().append(comp.long_name);
+                                                        return;
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        else {
+                                            navigator.notification.alert(
+                                                jQuery.i18n.prop("msg_error", " no position found"),
+                                                null, 'JourneyNotes', 'Ok');
+                                        }
+                                    }
+                                    else if (status === google.maps.GeocoderStatus.ZERO_RESULTS) {
+                                        navigator.notification.alert(
+                                            jQuery.i18n.prop("msg_error", " no position found"),
+                                            null, 'JourneyNotes', 'Ok');
+                                    }
+                                    else {
+                                        navigator.notification.alert(
+                                            jQuery.i18n.prop("msg_error_generic"),
+                                            null, 'JourneyNotes', 'Ok');
+                                    }
+                                });
+                        },
+                        function (error) {
+                            navigator.notification.alert(
+                                jQuery.i18n.prop("msg_error", error.message + " (" + error.code + ")"),
+                                null, 'JourneyNotes', 'Ok');
+                        });
+                    }
+                    else {
+                        navigator.notification.alert(
+                             jQuery.i18n.prop("msg_position_not_available"),
+                             null, 'JourneyNotes', 'Ok');
+                    }
+                }
+                
+                //called when sharing
+                //seems to be ok
+                function loadPhoto(imageUrl, pictureName, onComplete) {
+
+                    loadImage(
+                        imageUrl,
+                        function (img) {
+                            if (img.type === "error") {
+                                if (debug_mode) {
+                                    console.log("Error loading image " + imageUrl);
+                                }
+                                navigator.notification.alert(
+                                    jQuery.i18n.prop("msg_error_generic"),
+                                    null, 'JourneyNotes', 'Ok');
+                            } 
+                            else {
+                                var dataURL = img.toDataURL("image/png");
+                                var myfilename = pictureName.substr(0, pictureName.lastIndexOf('.')) + ".png";
+                                var prefixRe = new RegExp("^data:image/[^;]+;base64,");
+                                var bStr = dataURL.replace(prefixRe, "");
+                                if (debug_mode) {
+                                    console.log("myfilename: " + myfilename);
+                                }
+                                //saving image on google drive
+                                uploadFileGDrive(tripname, myfilename, bStr, "image/png", onComplete);
+                            }
+                        }, 
+                        { maxWidth: 600, canvas: true }
+                    );
+                }
+                
+                //ok
+                function loadBase64Data(input, selected, onSuccess) {
+
+                    if (debug_mode) {
+                        console.log("loadBase64Data called");
+                    }
+                    loadImage(input,
+                        function (img) {
+                            if (img.type === "error") {
+                                if (debug_mode) {
+                                    console.log("Error loading image " + input);
+                                }
+                            } 
+                            else {
+                                if (debug_mode) {
+                                    console.log("image dimensions: " + img.width + ", " + img.height);
+                                }
+                                if (selected === "1") {
+                                    myblob = img.toDataURL("image/png");
+                                    var ctx = img.getContext("2d");
+                                    //draw check icon
+                                    var checkImg = new Image();
+                                    checkImg.onload = function () {
+                                        ctx.drawImage(checkImg, 5, 5);
+                                        onSuccess(img.toDataURL("image/png"), img.width, img.height);
+                                    };
+                                    checkImg.src = "themes/images/Check-icon.png";                                    
+                                }
+                                else {
+                                    onSuccess(img.toDataURL("image/png"), img.width, img.height);
+                                }
+                            }
+                        }, 
+                        { 
+                            maxWidth: 150,
+                            canvas: true 
+                        }
+                    );
+                }
+                
+                //ok
+                function initGallery() {
+                    
+                    if (debug_mode) {
+                        console.log("initGallery called");
+                    }
+                    $('#iGallery').empty();
+                    //var imgRemoved = [];
+                    PlacePicture.all()
+                            .filter("tripname", "=", tripname)
+                            .filter("startDate", "=", startDate)
+                            .order('pictureUri', true)
+                            .list(null, function (items) {
+
+                        var idx = 1;
+                        items.forEach(function(item) {
+                            
+                            if (debug_mode) {
+                                console.log("image found: " + $(item).data('picture'));
+                            }
+                            loadBase64Data($(item).data('rawdata'), $(item).data('selectedImg'), 
+                                function (b64data, w, h) {
+                                    if (debug_mode) {
+                                        console.log("onSuccess called " + b64data);
+                                    }
+                                    var content = "<li id='li" + idx + "'><a href='flipimage.html?tripname=" + 
+                                        tripname + "&startDate=" + startDate.getTime() + "&pict=" + $(item).data('picture') +
+                                        "'><img src='" + b64data + "' style='max-width: 150px;'/></a></li>";
+                                    if ($(item).data('selectedImg') === "1") {
+                                        if (pictureUrl === null) {
+                                            selPictureName = $(item).data('picture');
+                                            if (debug_mode) {
+                                                console.log("exportUrl: " + $(item).data('exportUrl'));
+                                            }
+                                            if ($(item).data('exportUrl') !== null && $(item).data('exportUrl') !== "") {
+                                                pictureUrl = $(item).data('exportUrl');
+                                            }
+                                            else {
+                                                pictureUrl = $(item).data('rawdata');
+                                            }
+                                        }
+                                    }
+                                    $(content).appendTo("#iGallery").enhanceWithin();
+                                });
+                            idx = idx + 1;
+                        });
+                        if (idx > 1) {
+                            $("#iGallery").listview("refresh");
+                        }
+                    });
+                }
+                
+                function initWeather() {
+                    
+                    if (gMapsScriptLoaded && navigator.connection.type !== Connection.NONE) {
+                        
+                        $.getJSON("http://api.openweathermap.org/data/2.5/weather?lat=" + lat 
+                                + "&lon=" + lng + "&lang=" + localStorage.getItem("mytrip_lang").substring(0, 2)
+                                + "&units=" + refsys,
+                            function(data) {
+                                
+                                var weather = data.weather[0];
+                                if (debug_mode) {
+                                    console.log("resp: " + JSON.stringify(data));
+                                }
+
+                                var buf = "<h1>" + Math.round(data.main.temp) + deg + "</h1>&nbsp;<img src='http://openweathermap.org/img/w/" 
+                                        + weather.icon + ".png' style='width:auto; height:auto;vertical-align: middle;' /><span>" 
+                                        + weather.description + "</span>";
+                                
+                                var bufTab = "<table data-role='table' data-mode='reflow' class='weather-list ui-responsive'>" +
+                                        "<tbody><tr><td>" + $.i18n.prop("wind") + "</td><td>" + data.wind.speed + " m/s</td></tr>" +
+                                        "<tr><td>" + $.i18n.prop("cloudness") + "</td><td>" + data.clouds.all + " %</td></tr>" +
+                                        "<tr><td>" + $.i18n.prop("pressure") + "</td><td>" + data.main.pressure + " hpa</td></tr>" +
+                                        "<tr><td>" + $.i18n.prop("humidity") + "</td><td>" + data.main.humidity + " %</td></tr>" +
+                                        "<tr><td>" + $.i18n.prop("sunrise") + "</td><td>" + new Date(data.sys.sunrise * 1000).toString("HH:mm") + "</td></tr>" +
+                                        "<tr><td>" + $.i18n.prop("sunset") + "</td><td>" + new Date(data.sys.sunset * 1000).toString("HH:mm") + "</td></tr>" +
+                                        "</tbody></table>";
+                                      
+                                $("#weather-head").empty().append(buf);
+                                localStorage.setItem("mytrip_place_weather_head", buf);
+
+                                $("#weather-tab").empty().append(bufTab);
+                                localStorage.setItem("mytrip_place_weather_tab", footer);
+
+                                var footer = "<p><img src=\"themes/images/93-thermometer.png\" style=\"vertical-align: middle;\" />&nbsp;&nbsp;&nbsp;"
+                                    + new Date(data.dt * 1000).toString("dd-MM-yyyy") + " - " + data.name + ", " + data.sys.country + "</p>";
+                                $("#footer-tab").empty().append(footer);
+                                localStorage.setItem("mytrip_place_footer_tab", footer);
+
+                        });
+
+                        $.getJSON("http://api.openweathermap.org/data/2.5/forecast?lat=" + lat 
+                                + "&lon=" + lng + "&lang=" + localStorage.getItem("mytrip_lang").substring(0, 2)
+                                + "&units=" + refsys,
+                            function(data) {
+                                var bufTab = "<table data-role='table' data-mode='reflow' class='weather-list ui-responsive'>"
+                                    + "<thead><td colspan='2'>" + $.i18n.prop("header_forecast") + "</td><td>Max</td><td>Min</td></thhead><tbody>";
+                                var today = new Date();
+                                var tmpDate = new Date();
+                                var tempMin = null, tempMax = null, tempIcon = null;
+                                if (debug_mode) {
+                                    console.log("resp #: " + data.list.length);
+                                }
+                                for (var i = 0; i < data.list.length; i++) {
+                                    var dtw = data.list[i];
+                                    if (debug_mode) {
+                                        console.log("weather date: " + new Date(dtw.dt * 1000));
+                                    }
+                                    if (tmpDate.toString("yyyyMMdd") < new Date(dtw.dt * 1000).toString("yyyyMMdd") 
+                                            && tmpDate.toString("yyyyMMdd") > today.toString("yyyyMMdd")) {
+                                        var dayname = $.i18n.prop("day_" + tmpDate.getDay());
+                                        bufTab = bufTab + "<tr><td>" + dayname + "</td><td>" 
+                                                + tempIcon + "</td><td align='right'>" + Math.round(tempMax) + "°</td><td align='right'>"
+                                                + Math.round(tempMin) + "°</td></tr>";
+                                        tempMin = null; tempMax = null;
+                                    }
+                                    tmpDate = new Date(dtw.dt * 1000);
+                                    if (tempMin === null || dtw.main.temp_min < tempMin) {
+                                        tempMin = dtw.main.temp_min;
+                                    }
+                                    if (tempMax === null || dtw.main.temp_max > tempMax) {
+                                        tempMax = dtw.main.temp_max;
+                                        tempIcon = "<img src='http://openweathermap.org/img/w/" + dtw.weather[0].icon 
+                                                + ".png' style='width:auto; height:auto;vertical-align: middle;' />";
+                                    }
+                                }
+                                $("#forecast-tab").empty().append(bufTab);
+                                localStorage.setItem("mytrip_place_forecast_tab", bufTab);
+                        });
+                        
+                        //test device
+                        if(!(navigator.userAgent.match(/iPhone/i)) && !(navigator.userAgent.match(/iPod/i))) {
+                            //initialize the map
+                            var center = new google.maps.LatLng(lat, lng);
+
+                            var RainMap = new google.maps.ImageMapType({
+                                getTileUrl: function (coord, zoom) {
+                                    return "http://tile.openweathermap.org/map/precipitation/" + zoom + "/" + coord.x + "/" + coord.y + ".png";
+                                },
+                                tileSize: new google.maps.Size(256, 256),
+                                isPng: true,
+                                opacity: 0.7,
+                                alt: "RainMap",
+                                name: "RainMap",
+                                maxZoom: 19
+                            });
+                            var PressureMap = new google.maps.ImageMapType({
+                                getTileUrl: function (coord, zoom) {
+                                    return "http://tile.openweathermap.org/map/pressure_cntr/" + zoom + "/" + coord.x + "/" + coord.y + ".png";
+                                },
+                                tileSize: new google.maps.Size(256, 256),
+                                isPng: true,
+                                opacity: 0.7,
+                                alt: "PressureMap",
+                                name: "PressureMap",
+                                maxZoom: 19
+                            });
+                            var mapOptions = {
+                                zoom: 7,
+                                center: center,
+                                mapTypeId: google.maps.MapTypeId.TERRAIN
+                            };
+                            map = new google.maps.Map(document.getElementById( "weathermap_canvas" ), mapOptions);
+                            //add tile
+                            map.overlayMapTypes.push(RainMap);
+                            map.overlayMapTypes.push(PressureMap);
+                        }
+                    }
+                    else {
+                        $("#weather-head").empty().append(localStorage.getItem("mytrip_place_weather_head"));
+                        $("#weather-tab").empty().append(localStorage.getItem("mytrip_place_weather_tab"));
+                        $("#forecast-tab").empty().append(localStorage.getItem("mytrip_place_forecast_tab"));
+                        $("#footer-tab").empty().append(localStorage.getItem("mytrip_place_footer_tab"));
+                    }
+                }
+                
+                
+                function searchPlaces (text) {
+
+                    if (gMapsScriptLoaded && navigator.connection.type !== Connection.NONE) {
+                        
+                        var center = new google.maps.LatLng(lat, lng);
+                        /*
+                         * Google Places
+                         */ 
+                        var request = {
+                            location: center,
+                            query: text,
+                            radius: '3000',
+                            language: localStorage.getItem("mytrip_lang").substring(0, 2),
+                            types: ['cafe', 'food', 'restaurant']
+                        };
+
+                        var eatingIcon = {
+                            url: 'themes/images/eating.jpeg',
+                            // This marker is 20 pixels wide by 32 pixels tall.
+                            size: new google.maps.Size(24, 24),
+                            // The origin for this image is 0,0.
+                            origin: new google.maps.Point(0,0),
+                            // The anchor for this image is the base of the flagpole at 0,32.
+                            anchor: new google.maps.Point(0, 24)
+                        };
+
+                        var service = new google.maps.places.PlacesService(mapInfo);
+                        service.textSearch(request, function (results, status) {
+                            if (status === google.maps.places.PlacesServiceStatus.OK) {
+                                for (var i = 0; i < results.length; i++) {
+                                    var action = "", phone = "";
+                                    var request = {
+                                        placeId: results[i].place_id,
+                                        language: localStorage.getItem("mytrip_lang").substring(0, 2)
+                                    };
+                                    try {
+                                        service.getDetails(request, function (place, status) {
+                                            if (status === google.maps.places.PlacesServiceStatus.OK) {
+                                                
+                                                if (debug_mode) {
+                                                    console.log("gplace: " + JSON.stringify(place));
+                                                }
+                                                if (typeof place.website !== 'undefined' && place.website.length > 0) {
+                                                    action = " onclick=\"window.open('" + place.website + "', '_system');\"";
+                                                }
+                                                if (typeof place.international_phone_number !== 'undefined') {
+                                                    phone = '<a href=”#" onclick="phoneCall(\'' + place.international_phone_number.replace(/ /g, "") + 
+                                                            '\')">' + place.international_phone_number + '</a>';
+                                                }
+                                                if (debug_mode) {
+                                                    console.log("phone link: " + phone);
+                                                }
+                                                var contentString = '<div><h3><a href="#"' + action + '>' +
+                                                    place.name + '</a></h3><p>' + place.types[0].replace(/_/g, " ") + ', ' + 
+                                                    place.formatted_address + '</p><p>' + phone + '</p></div>';
+
+                                                markersArray.push(createMarker(place.geometry.location, place.name, contentString, eatingIcon));
+                                            }
+                                        });
+                                    }
+                                    catch (e) {
+                                        if (debug_mode) {
+                                            console.log(e);
+                                        }
+                                        navigator.notification.alert(
+                                            jQuery.i18n.prop("msg_error", e),
+                                            null, 'JourneyNotes', 'Ok');
+                                    }
+                                }
+                            }
+                        });
+                    }
+                }
+                
+                function searchFoursquare(text) {
+
+                    if (gMapsScriptLoaded && navigator.connection.type !== Connection.NONE) {
+                        
+                        var fsIcon = {
+                            url: 'themes/images/foursquare-icon-36x36.png',
+                            // This marker is 20 pixels wide by 32 pixels tall.
+                            size: new google.maps.Size(24, 24),
+                            // The origin for this image is 0,0.
+                            origin: new google.maps.Point(0,0),
+                            // The anchor for this image is the base of the flagpole at 0,32.
+                            anchor: new google.maps.Point(0, 24)
+                        };
+
+                        $.ajax({
+                            url: "https://api.foursquare.com/v2/venues/search?client_id=AZOZD1N515MUSK50NRFC5VQOTFXVR1D2HDUT5H0XN2VEFJE5&client_secret=ZP0BOFKE4MWHC2VPYWUGDZXDRPE32KKZOBNUZY5WYMP1SQXQ" 
+                                + "&v=20140904&ll=" +  lat + "," + lng + "&query=" + text,
+                            crossDomain: true, // enable this
+                            dataType: 'jsonp',
+                            success: function(resp) {
+                                if (debug_mode) {
+                                    console.log( "Resp " + JSON.stringify(resp.response) );
+                                }
+                                if (resp.meta.code === 200) {
+                                    var venues = resp.response.venues;
+                                    for (var key in venues) {
+                                        var v = venues[key];
+                                        var loc = v.location;
+                                        if (typeof loc !== 'undefined' && typeof loc.address !== 'undefined' && loc.distance < 10000) {
+                                            var point = new google.maps.LatLng(loc.lat, loc.lng);
+                                            if (debug_mode) {
+                                                console.log( "Venue: " + v.name + 
+                                                        ", " + JSON.stringify(loc) +
+                                                        ", " + JSON.stringify(v.categories));
+                                            }
+                                            var cat = "";
+                                            if (v.categories.length > 0) {
+                                                cat += "<p>" + jQuery.i18n.prop("checklist_items_title") + 
+                                                        ": " + v.categories[0].name + "</p>";
+                                            }
+                                            var content = "<h3>" + v.name + "</h3>"
+                                                    + "<p>" + loc.address + ", " + loc.city + "</p>"
+                                                    + cat + "<p>" + jQuery.i18n.prop("label_dist")
+                                                    + ": " + loc.distance + "m</p>";
+
+                                            markersArray.push(createMarker(point, v.name, content, fsIcon));
+                                        }
+                                    }
+                                }
+                                else {
+                                    if (debug_mode) {
+                                        console.log( "Errore " + JSON.stringify(resp.meta) );
+                                    }
+                                    navigator.notification.alert(
+                                        jQuery.i18n.prop("msg_error", resp.meta),
+                                        null, 'JourneyNotes', 'Ok');
+                                }
+                            },
+                            error: function() {
+                                navigator.notification.alert(
+                                    jQuery.i18n.prop("msg_error_generic"), 
+                                    null, 'JourneyNotes', 'Ok');
+                            }
+                        });
+                    }
+                }
+
+                function searchWikipedia (text) {
+
+                    if (gMapsScriptLoaded && navigator.connection.type !== Connection.NONE) {
+                        
+                        var wikiIcon = {
+                            url: 'themes/images/Wikipedia.png',
+                            // This marker is 20 pixels wide by 32 pixels tall.
+                            size: new google.maps.Size(24, 24),
+                            // The origin for this image is 0,0.
+                            origin: new google.maps.Point(0,0),
+                            // The anchor for this image is the base of the flagpole at 0,32.
+                            anchor: new google.maps.Point(0, 24)
+                        };
+
+                        $.ajax({
+                            url: "https://" + localStorage.getItem("mytrip_lang").substring(0, 2)
+                                    + ".wikipedia.org/w/api.php?action=query&list=geosearch&gsradius=10000&gscoord="
+                                    + lat + "%7C" + lng + "&gslimit=500&format=json",
+                            crossDomain: true, // enable this
+                            dataType: 'jsonp',
+                            success: function(data) {
+                                        if (debug_mode) {
+                                            console.log("wiki data: " + JSON.stringify(data));
+                                        }
+                                        if (typeof data.query !== 'undefined') {
+                                            if (debug_mode) {
+                                                console.log("wiki query: " + JSON.stringify(data.query));
+                                            }
+                                            var pages = data.query.geosearch;
+                                            if (typeof pages !== 'undefined') {
+
+                                                for (var key in pages) {
+                                                    var page = pages[key]; 
+                                                    var pageid = page.pageid;
+                                                    var title = page.title;
+                                                    if (typeof title !== 'undefined') {
+                                                        var fullurl = "https://" + localStorage.getItem("mytrip_lang").substring(0, 2) + 
+                                                                ".wikipedia.org/wiki/" + title.replace(/ /g, "_");
+                                                        if (title.toUpperCase().indexOf(text.toUpperCase()) > -1) {
+                                                            if (debug_mode) {
+                                                                console.log("pageid: " + pageid + ", title: " + title + ", url: " + fullurl);
+                                                            }
+                                                            var point = new google.maps.LatLng(page.lat, page.lon);
+                                                            var content = '<div><h3><a href="#" onclick="window.open(\'' + transformUrl(fullurl) + '\', \'_blank\');">' + 
+                                                                page.title + '</a></h3><p>' + jQuery.i18n.prop("label_dist") + ': ' + page.dist + '</p></div>';
+
+                                                            markersArray.push(createMarker(point, title, content, wikiIcon));
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    },
+                            error: function() {
+                                navigator.notification.alert(
+                                    jQuery.i18n.prop("msg_error_generic"), 
+                                    null, 'JourneyNotes', 'Ok');
+                            }
+                        });
+                    }
+                }
+                
+                function onConfirmCall(buttonIndex) {
+                    if (debug_mode) {
+                        console.log('You selected button ' + buttonIndex);
+                    }
+                    if (buttonIndex === 1) {
+                        window.open('tel:' + numberToCall, '_system');
+                    }
+                }
+
+                function phoneCall(number) {
+                    numberToCall = number;
+                    navigator.notification.confirm(
+                        $.i18n.prop("msg_confirm_phone_call", numberToCall), // message
+                        onConfirmCall,          // callback to invoke with index of button pressed
+                        'JourneyNotes',           // title
+                        [$.i18n.prop("msg_yes"), $.i18n.prop("msg_no")]     // buttonLabels
+                    );
+                }
+                
+                function createMarker(latlng, header, description, image) {
+                    
+                    if (debug_mode) {
+                        console.log("marker: " + header + " - " + description);
+                    }
+                    var infowindow = new google.maps.InfoWindow({
+                        content: description
+                    });
+                    var marker = new google.maps.Marker({
+                        position: latlng,
+                        title: header,
+                        icon: image,
+                        map: mapInfo,
+                        zIndex: Math.round(latlng.lat()*-100000)<<5
+                    });
+                    google.maps.event.addListener(marker, 'click', function() {
+                        infowindow.open(mapInfo, marker);
+                    });
+                    return marker;
+                }
+    
+                function transformUrl(url) {
+                    if((navigator.userAgent.match(/iPhone/i)) || (navigator.userAgent.match(/iPod/i))) {
+                        var dot_pos = url.indexOf(".");
+                        var new_url = url.substring(0, dot_pos) + ".m" + url.substring(dot_pos);
+                        return new_url;
+                    }
+                    return url;
+                }
+                
+                // A button will call this function
+                // ok
+                function getPhoto() {
+                    
+                    PlacePicture.all().filter("tripname", "=", tripname)
+                        .filter("startDate", "=", startDate)
+                        .count(null, function (numOfItems) {
+                    
+                            if (numOfItems === maxPicturesNo) {
+                                navigator.notification.alert(
+                                     jQuery.i18n.prop("msg_max_num_pictures_reached"),
+                                     null, 'JourneyNotes', 'Ok');
+                            }
+                            else {
+                                if (numOfItems > 0) {
+                                    pictureSel = "0";
+                                }
+                                else {
+                                    pictureSel = "1";
+                                }
+                                // Retrieve image file location from specified source
+                                navigator.camera.getPicture(onPhotoURISuccess, onFail, 
+                                    { 
+                                        quality: 50, 
+                                        destinationType: destinationType.FILE_URI,
+                                        sourceType: pictureSource.PHOTOLIBRARY,
+                                        correctOrientation: true
+                                    });
+                          }
+                      });
+                }
+                // Called when a photo is successfully retrieved (ok)
+                //
+                function onPhotoURISuccess(imageURI) {
+                    // Uncomment to view the image file URI 
+                    if (debug_mode) {
+                        console.log("onPhotoURISuccess::image URI: " + imageURI);
+                    }
+                    var pictureName = imageURI.substring(imageURI.lastIndexOf('/') + 1);
+                    loadImageData (imageURI, function (imgData, width, height) {
+                               //to be saved with a name and showed in gallery
+                               //if (debug_mode) {
+                               //     console.log("onPhotoURISuccess::image Data: " + imgData);
+                               //}
+                               persistence.transaction(function(tx) {
+                                    var obj = new PlacePicture({
+                                                    tripname: tripname,
+                                                    startDate: startDate,
+                                                    description: $("#description").val(),
+                                                    picture: pictureName,
+                                                    selectedImg: pictureSel,
+                                                    pictureUri: imageURI,
+                                                    rawdata: imgData
+                                                });
+                                    persistence.add(obj);
+                                    persistence.flush(tx, function(tx) {
+                                        if (tx === undefined || tx.toString() === "") {
+                                            initGallery();
+                                        }
+                                        else {
+                                            navigator.notification.alert(
+                                                    jQuery.i18n.prop("msg_error", tx),
+                                                    null, 'JourneyNotes', 'Ok');
+                                        }
+                                    });
+                                });
+                        });
+                    
+                }
+            
+                //ok
+                function loadImageData(imageUrl, callback) {
+                    
+                    if (debug_mode) {
+                        console.log("loadImageData called for " + imageUrl);
+                    }
+                    loadImage(imageUrl,
+                          function (img) {
+                              if (img.type === "error") {
+                                if (debug_mode) {
+                                    console.log("Error loading image " + imageUrl);
+                                }
+                              }
+                              else {
+                                if (debug_mode) {
+                                    console.log("image dimensions: " + img.width + ", " + img.height);
+                                }
+                                callback(img.toDataURL("image/png"), img.width, img.height);
+                              }
+                          },
+                          {
+                              maxWidth: window.screen.availWidth,
+                              canvas: true
+                          }
+                    );
+                }
+            
+                // Called if something bad happens.
+                // 
+                function onFail(message) {
+                    if (debug_mode) {
+                        console.log(jQuery.i18n.prop("msg_error"), message);
+                    }
+                }
+                
+            </script>
+                        
+            <div data-role="panel" data-position-fixed="true" id="mypanel" data-theme="b">
+                <!-- panel content goes here -->
+            </div><!-- /panel -->
+            
+            <div id="place-header" data-role="header" data-position="fixed" data-tap-toggle="false" data-theme='b'>
+                <a href="#mypanel" data-ajax="false"><i class='lIcon fa fa-bars'></i></a>
+                <h1 id="place_title"></h1>
+                <div id="place-header-controlgroup" class="ui-btn-right">
+                </div>        
+            </div><!-- /header -->
+        
+            <div id="place-content" data-role="content">
+	        <div class='inset'>
+
+                    <div id="fc1" data-role="fieldcontain">
+                        <label id="label_description" for="description">Description:</label>
+                        <div class="ui-grid-a">
+                            <div class="ui-block-a">
+                                <input type="text" name="description" id="description" />
+                            </div>
+                            <div class="ui-block-b">
+                                <a href="javascript:getPosition()" class="ui-btn ui-btn-inline ui-corner-all ui-btn-icon-notext ui-icon-location">Set</a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="fc2" data-role="fieldcontain">
+                        <label id="label_arr_date" for="sDate">Arrival date:</label>
+                        <input type="datetime-local" data-clear-btn="false" name="sDate" id="sDate" />
+                    </div>
+
+                    <div id="fc7" data-role="fieldcontain">
+                        <label id="label_dep_date" for="eDate">Departure date:</label>
+                        <input type="datetime-local" data-clear-btn="false" name="eDate" id="eDate" />
+                    </div>
+
+                    <div id="fc4" data-role="fieldcontain">
+                        <label id="label_notes" for="notes">Notes:</label>
+                        <textarea name="notes" id="notes" rows="7"></textarea>
+                    </div>
+
+                    <div id="fc6" class="content-primary">
+                        <ul id="iGallery"></ul>
+                    </div>
+
+                    <p></p>
+                    
+                    <div id="fc3" class="ui-field-contain">
+                        <div>
+                            <a href="javascript:getPhoto()">
+                                <img src='themes/images/screenshot-32.png' alt='Photos' height="32" width="32"/>
+                            </a>
+                            &nbsp;
+                            <a href="javascript:sharePlaceOnGooglePlus()">
+                                <img src="themes/images/gplus-32.png" alt="Google+" height="32" width="32"/>
+                            </a>
+                            &nbsp;
+                            <a href="javascript:sharePlaceOnFacebook()">
+                                <img src='themes/images/fb.jpeg' alt='Facebook' height="32" width="32"/>
+                            </a>
+                            &nbsp;
+                            <a href="javascript:sharePlaceOnTwitter()">
+                                <img src='themes/images/twitter.png' alt='Twitter' height="32" width="32"/>
+                            </a>
+                            &nbsp;
+                            <a href="javascript:sharePlaceByMail()">
+                                <img src='themes/images/gmail.png' alt='Mail' height="32" width="32"/>
+                            </a>
+                        </div>
+                    </div>
+
+                    <div id="fc9" data-role="fieldcontain">
+                        <div id="weather-head"></div>
+                    </div>
+                    <div class="ui-grid-a">
+                        <div class="ui-block-a">
+                            <div id="fc12" data-role="fieldcontain">
+                                <div id="forecast-tab"></div>
+                            </div>
+                            <div id="fc10" data-role="fieldcontain">
+                                <h4 id="collapsible_weather_tab"></h4>
+                                <div id="weather-tab"></div>
+                            </div>
+                            <div id="fc14" data-role="fieldcontain">
+                                <a href="#popupMap" data-rel="popup" data-position-to="window" id="a_map"></a>
+                                <div data-role="popup" id="popupMap" data-overlay-theme="a" data-theme="a" data-corners="false" data-tolerance="15,15">
+                                    <a href="#" data-rel='back' class="ui-btn ui-btn-b ui-corner-all ui-shadow ui-btn-a ui-icon-delete ui-btn-icon-notext ui-btn-right"></a>
+                                    <iframe id="map_frame" src="map.html" width="480" seamless=""></iframe>
+                                </div>                    
+                            </div>
+                        </div>
+                        <div class="ui-block-b">
+                            <div id="weathermap_canvas"></div>
+                        </div>
+                    </div>
+                    <div id="fc13" data-role="fieldcontain">
+                        <div id="footer-tab"></div>
+                    </div>
+                </div>
+                
+                <div id="fc11" data-role="fieldcontain">
+                    <div id="search-box">
+                        <input type="search" id="search-input" name="search" />
+                    </div>
+                    <div id="nearby_map_canvas"></div>
+                </div>
+                
+                <div id="fc-nv">
+                    <canvas id="myCanvas" width="578" height="200"></canvas>                    
+                </div>
+                
+            </div><!-- /content -->
+
+            <div data-role="footer" data-position="fixed" data-tap-toggle="false" data-theme="b">
+                <div data-role='navbar'>
+                    <ul>
+                        <li><a id='a_details' href='#' data-icon='edit' class='ui-btn-active ui-state-persist'>Details</a></li>
+                        <li><a id='a_diary' href='#' data-icon='comment'>Diary</a></li>
+                        <li><a id='a_weather' href='#' data-icon='cloud'>Weather</a></li>
+                        <li><a id='a_nearby' href='#' data-icon='info'>NearBy</a></li>
+                    </ul>
+                </div>
+            </div><!-- /footer -->
+        </div><!-- /page -->
+        
+    </body>
+</html>

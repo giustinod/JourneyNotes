@@ -1,0 +1,182 @@
+
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>JourneyNotes</title>
+    </head>
+    <body>
+        <div id="trip-item" data-role="page">
+
+            <script type="text/javascript">
+
+                var itemObj = null;
+
+                $('#trip-item').on('pageinit', function (e, data) {
+
+                    var parameters = $(this).data("url").split("?")[1];
+                    tripname = parameters.split("&")[0].replace("tripname=","");  
+
+                    Trip.findBy("name", tripname, function(item) {
+                        if (item !== null) {
+                            $('#fc1').hide();
+                            itemObj = item;
+                            //$("#name").val($(item).data('name'));
+                            $('#trip_title').empty().append($(item).data('name'));
+                            $("#startDate").val($(item).data('startDate').toString('yyyy-MM-dd'));
+                            if ($(item).data('endDate') !== null) {
+                                $("#endDate").val($(item).data('endDate').toString('yyyy-MM-dd'));
+                            }
+                            $("#notes").val($(item).data('notes'));
+                            
+                            PlacePicture.all().filter("tripname", "=", tripname)
+                                .filter("selectedImg", "=", "1")
+                                .order('startDate', true).limit(1)
+                                    .forEach(function(item) {
+                                        $('#photo_container').empty().append("<img src='" + 
+                                            $(item).data('rawdata') + "' style='max-width: " +
+                                            (window.screen.availWidth * 2 / 3) + "px;'/>" +
+                                            "<p>" + $(item).data('description') + "</p>");
+                            });                             
+                        }
+                        else {
+                            $('#trip_title').empty().append($.i18n.prop("trip_title"));
+                            $('#fc1').show();
+                        }
+                    });
+                    
+                    var saveLink = $("<a href='#' class='ui-btn ui-btn-inner'><i class='lIcon fa fa-save'></i></a>")
+                            .click(function(e) {
+                                persistence.transaction(function(tx) {
+                                    if (($("#name").val() === "" && itemObj === null) || $("#startDate").val() === ""
+                                            || $("#endDate").val() === "") {
+                                        navigator.notification.alert(
+                                            jQuery.i18n.prop("msg_missing_desc_or_date"),
+                                            null, 'JourneyNotes', 'Ok');
+                                    }
+                                    else
+                                    {
+                                        if (itemObj === null)
+                                        {
+                                            tripname = $("#name").val();
+                                            itemObj = new Trip({name: $("#name").val(), 
+                                                startDate: Date.parse($("#startDate").val()),
+                                                endDate: Date.parse($("#endDate").val()),
+                                                notes: $("#notes").val()}); 
+                                            persistence.add(itemObj);
+                                        }
+                                        else
+                                        {
+                                            //$(itemObj).data('name', $("#name").val());
+                                            $(itemObj).data('startDate', Date.parse($("#startDate").val()));
+                                            $(itemObj).data('endDate', Date.parse($("#endDate").val()));
+                                            $(itemObj).data('notes', $("#notes").val());
+                                        }
+                                        persistence.flush(tx, function(tx) {
+                                            if (tx.toString() === "") {
+                                                navigator.notification.alert(
+                                                    jQuery.i18n.prop("msg_saved", tripname),
+                                                    function () {
+                                                        $.mobile.changePage("index.html");
+                                                    }, 'JourneyNotes', 'Ok');
+                                            }
+                                            else {
+                                                navigator.notification.alert(
+                                                    jQuery.i18n.prop("msg_error", tx.code + ", " + tx.message),
+                                                    null, 'JourneyNotes', 'Ok');
+                                            }
+                                        });
+                                    }
+                                });
+                            });
+
+                    $('a#a_checklist').empty().append($.i18n.prop("checklist_header"));                    
+                    $('a#a_itinerary').empty().append($.i18n.prop("itinerary_title"));                    
+                    $('a#a_expenses').empty().append($.i18n.prop("expenses_header"));                    
+                    $('#label_name').empty().append($.i18n.prop("label_name"));                    
+                    $('#label_arr_date').empty().append($.i18n.prop("label_arr_date"));                    
+                    $('#label_dep_date').empty().append($.i18n.prop("label_dep_date"));                    
+                    $('#label_notes').empty().append($.i18n.prop("label_notes"));      
+                    
+                    var cancelLink = $("<a id='a_cancel' href='index.html' class='ui-btn ui-btn-inner'><i class='lIcon fa fa-backward'></i></a>");
+                    $('#trip-header-controlgroup').append(cancelLink);
+                    $('#trip-header-controlgroup').append(saveLink);
+                    
+                    addPanel();
+                });
+                
+                $(document).on('focus', 'input, textArea', function () {
+                    $('div[data-role="footer"]').hide();
+                })  
+
+                $(document).on('blur', 'input, textarea', function() {
+                    setTimeout(function() {
+                        window.scrollTo(document.body.scrollLeft, document.body.scrollTop);
+                        $('div[data-role="footer"]').show();
+                    }, 0);
+                });
+                
+                function gotoTab(page) {
+                    if (itemObj === null) {
+                        navigator.notification.alert(
+                            jQuery.i18n.prop("msg_save_first"),
+                            null, 'JourneyNotes', 'Ok');
+                    }
+                    else {
+                        $.mobile.changePage(page + "?tripname=" + tripname);
+                    }
+                }
+                
+            </script>
+            
+            <div data-role="panel" data-position-fixed="true" id="mypanel" data-theme="b">
+                <!-- panel content goes here -->
+            </div><!-- /panel -->
+            
+            <div id="trip-header" data-role="header" data-position="fixed" data-tap-toggle="false" data-theme='b'>
+                <a href="#mypanel" data-ajax="false"><i class='lIcon fa fa-bars'></i></a>
+                <h1 id="trip_title"></h1>
+                <div id="trip-header-controlgroup" class="ui-btn-right">
+                </div>
+            </div><!-- /header -->
+
+            <div data-role="content">
+	        <div class='inset'>
+                    
+                    <div id="photo_container" data-role="fieldcontain">
+                    </div>
+
+                    <div id="fc1" data-role="fieldcontain">
+                        <label id="label_name" for="name">Name:</label>
+                        <input type="text" name="name" id="name" value=""  />
+                    </div>
+
+                    <div data-role="fieldcontain">
+                        <label id="label_arr_date" for="startDate">Start date:</label>
+                        <input type="date" name="startDate" id="startDate" value=""  />
+                    </div>
+
+                    <div data-role="fieldcontain">
+                        <label id="label_dep_date" for="endDate">End date:</label>
+                        <input type="date" name="endDate" id="endDate" value=""  />
+                    </div>
+
+                    <div data-role="fieldcontain">
+                        <label id="label_notes" for="notes">Notes:</label>
+                        <textarea name="notes" id="notes"></textarea>
+                    </div>
+                </div>
+            </div><!-- /content -->
+            
+            <div data-role="footer" data-position="fixed" data-tap-toggle="false" data-theme="b">
+                <div data-role='navbar'>
+                    <ul>
+                        <li><a id='a_checklist' href='#' onclick='gotoTab("trip_checklist.html");' data-icon='bullets'>Trip checklist</a></li>
+                        <li><a id='a_itinerary' href='#' onclick='gotoTab("itinerary.html");' data-icon='location'>Itinerary</a></li>
+                        <li><a id='a_expenses' href='#' onclick='gotoTab("trip_expenses.html");' data-icon='shop'>Expenses</a></li>
+                    </ul>
+                </div>
+            </div><!-- /footer -->
+        </div><!-- /page -->
+        
+    </body>
+</html>

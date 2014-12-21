@@ -69,7 +69,8 @@
                     if (parameters.split("&")[1] !== undefined) {
                         expcategory = parameters.split("&")[1].replace("expcategory=","");  
                         description = parameters.split("&")[2].replace("description=","");  
-                        eDate = parameters.split("&")[3].replace("eDate=","");  
+                        var strDt = parameters.split("&")[3].replace("eDate=","");  
+                        eDate = new Date(parseInt(strDt));  
 
                         TripExpense.all().filter("tripname", "=", tripname)
                                 .filter("expcategory", "=", expcategory)

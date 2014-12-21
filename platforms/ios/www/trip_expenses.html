@@ -86,7 +86,7 @@
                                 + "<td><a href='trip_expense.html?tripname="
                                 + tripname + "&expcategory=" + $(item).data('expcategory')
                                 + "&description=" + $(item).data('description') + "&eDate=" 
-                                + $(item).data('eDate') + "' >" 
+                                + $(item).data('eDate').getTime() + "' >" 
                                 + $(item).data('description') + "</a></td>" 
                                 + "<td>" + mydate + "</td>"
                                 + "<td style='text-align:left;'>" + $(item).data('place') + "</td>"

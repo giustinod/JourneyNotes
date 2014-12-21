@@ -1,0 +1,65 @@
+
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>JourneyNotes</title>
+    </head>
+    <body>
+        <div id="userguide-page" data-role="page">
+
+            <script>
+                $('#userguide-page').on('pageinit', function (e, data) {
+                    
+                    $('#userguide_title').empty().append($.i18n.prop("about_header"));
+                    $('#guide_intro').empty().append($.i18n.prop("intro_header"));
+                    $('#guide_trips').empty().append($.i18n.prop("trips_header"));
+                    $('#guide_trip_itinerary').empty().append($.i18n.prop("itinerary_title"));
+                    $('#guide_expenses').empty().append($.i18n.prop("expenses_header"));
+                    $('#guide_catalog').empty().append($.i18n.prop("checklist_header"));
+                    $('#guide_settings').empty().append($.i18n.prop("settings_header"));
+                    $('#guide_support').empty().append($.i18n.prop("guide_support"));
+                    $('#text_intro').empty().append($.i18n.prop("text_intro"));
+                    $('#text_settings').empty().append($.i18n.prop("text_settings"));
+                    $('#text_expenses').empty().append($.i18n.prop("text_expenses"));
+                    $('#text_checklist').empty().append($.i18n.prop("text_checklist"));
+                    $('#text_trips').empty().append($.i18n.prop("text_trips"));
+                    $('#text_itinerary').empty().append($.i18n.prop("text_itinerary"));
+                    $('#text_place').empty().append($.i18n.prop("text_place"));
+                    $('#guide_trip_place').empty().append($.i18n.prop("label_place"));
+                    $('#label_support').empty().append($.i18n.prop("label_support"));
+                    
+                    addPanel();
+                });
+            </script>
+            
+            <div data-role="panel" data-position-fixed="true" id="mypanel" data-theme="b">
+                <!-- panel content goes here -->
+            </div><!-- /panel -->
+            
+            <div id="header" data-role="header" data-position="fixed" data-tap-toggle="false" data-theme='b'>
+                <a href="#mypanel" data-ajax="false"><i class='lIcon fa fa-bars'></i></a>
+                <h1 id="userguide_title"></h1>
+            </div><!-- /header -->
+
+            <div data-role="content">
+	        <div class='inset'>
+                    <h3 id="guide_intro"></h3>
+                    <p id="text_intro"></p>
+                    <h3 id="guide_settings"></h3>
+                    <p id="text_settings"></p>
+                    <h3 id="guide_expenses"></h3>
+                    <p id="text_expenses"></p>
+                    <h3 id="guide_catalog"></h3>
+                    <p id="text_checklist"></p>
+                    <h3 id="guide_trips"></h3>
+                    <p id="text_trips"></p>
+                    <h4 id="guide_trip_itinerary"></h4>
+                    <p id="text_itinerary"></p>
+                    <h4 id="guide_trip_place"></h4>
+                    <p id="text_place"></p>
+                </div>
+                
+            </div><!-- /content -->
+        </div><!-- /page -->
+    </body>
+</html>

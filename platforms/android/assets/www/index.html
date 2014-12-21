@@ -1,0 +1,182 @@
+
+<!DOCTYPE html>
+<!-- for 64 bit architecture build -->
+<!-- http://stackoverflow.com/questions/19213782/undefined-symbols-for-architecture-arm64 -->
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, user-scalable=no" />
+        <title>JourneyNotes</title>
+        
+        <!-- FontAwesome - http://fortawesome.github.io/Font-Awesome/ -->
+        <link rel="stylesheet" href="themes/font-awesome.min.css" />
+        <!-- jQueryMobileCSS - original without styling -->
+        <link rel="stylesheet" href="js/jquery-mobile/jquery.mobile-1.4.3.css" />
+        <!-- nativeDroid core CSS -->
+        <link rel="stylesheet" href="themes/jquerymobile.nativedroid.css" />
+        <!-- nativeDroid: Light/Dark -->
+        <link rel="stylesheet" href="themes/jquerymobile.nativedroid.light.css"  id='jQMnDTheme' />
+        <!-- nativeDroid: Color Schemes -->
+        <link rel="stylesheet" href="themes/jquerymobile.nativedroid.color.blue.css" id='jQMnDColor' />
+        
+        <link rel='stylesheet' href='js/fullcalendar/fullcalendar.css' />
+        
+        <script type="text/javascript" src="js/jquery/jquery.js"></script>
+        <script type="text/javascript" src="js/jquery-mobile/jquery.mobile-1.4.3.js"></script>
+        
+        <script type="text/javascript" src="js/jquery.i18n.properties-min-1.0.9.js"></script>
+        <script type="text/javascript" src="js/date.js"></script>               
+        <script type="text/javascript" src="js/cordova.oauth2.js"></script>       
+        <script type="text/javascript" src="js/SocialSharing.js"></script>
+        <script type="text/javascript" src="js/load-image.js"></script>
+        <script type="text/javascript" src="js/load-image-ios.js"></script>
+        <script type="text/javascript" src="js/jszip.js"></script>
+        
+        <script type="text/javascript" src="js/persistence/persistence.js"></script>
+        <script type="text/javascript" src="js/persistence/persistence.store.sql.js"></script>
+        <script type="text/javascript" src="js/persistence/persistence.store.websql.js"></script>
+        <script type="text/javascript" src="js/persistence/persistence.jquery.js"></script>
+        <script type="text/javascript" src="js/persistence/persistence.jquery.mobile.js"></script>
+
+        <script type="text/javascript" src="js/mytrip.common.js"></script>  
+        <script type="text/javascript" src="js/mytrip.db.js"></script>  
+        <script type="text/javascript" src="js/mytrip.google.js"></script>  
+        
+        <script type="text/javascript" src='js/fullcalendar/lib/moment.min.js'></script>
+        <script type="text/javascript" src='js/fullcalendar/fullcalendar.js'></script>
+        
+        <script type="text/javascript" src='https://maps.googleapis.com/maps/api/js?libraries=geometry,places'></script>
+        <script type="text/javascript" src='https://apis.google.com/js/client:plusone.js?onload=getMyTripFolder'></script>
+        
+    </head>
+    <body>
+                
+        <div id="main-page" data-role="page">
+            
+            <script type="text/javascript" src="cordova.js"></script>
+            <script type="text/javascript" src="js/index.js"></script>
+            <script type="text/javascript">
+                
+                var itemToDelete;
+                
+                $('#main-page').on('pagebeforeshow', function (e, data) {
+                    if (tripPicture === null) {
+                        app.initialize();
+                    }
+                    else {
+                        buildTriplist();
+                    }
+                });
+
+                function buildTriplist() {
+                    $("#triplist").empty();
+                    Trip.all().order('startDate', false).forEach(function(trip) {
+                        if (debug_mode) {
+                            console.log("Trip " + $(trip).data('name') + " exported at " + $(trip).data('exportUrl'));
+                        }
+                        tripPicture = null;
+                        $.when(getTripDefaultPicture($(trip).data('name'))).then(function () {
+                            var content = "<li><a href='trip.html?tripname=" + $(trip).data('name') + "'>" +
+                                    "<img src='" + tripPicture + "' style='max-width: 100px;'>" +
+                                    //"<img src='" + $(trip).data('exportUrl') + "' style='max-width: 100px;'>" +
+                                    "<h2>" + $(trip).data('name') + "</h2>" +
+                                    "<p>" + $(trip).data('notes') + "</p></a>" +
+                                    "<a href='#' onclick='confirmAndDeleteTrip(\"" + 
+                                    $(trip).data('name') + "\")' data-icon='delete'>Delete</a></li>";
+                            $(content).appendTo("#triplist").enhanceWithin();
+                            $("#triplist").listview("refresh");
+                        }); 
+                    });
+                }
+
+                function getTripDefaultPicture(tripname) {
+                    var dfd = $.Deferred();
+                    PlacePicture.all().filter("tripname", "=", tripname)
+                            .filter("selectedImg", "=", "1")
+                            .order('startDate', true).limit(1)
+                        .list(null, function (pictures) {
+                            pictures.forEach(function(picture) {
+                                if ($(picture).data('selectedImg') === "1") {
+                                    tripPicture = $(picture).data('rawdata');
+                                    dfd.resolve();
+                                }
+                            }); 
+                            if (dfd.state() !== 'resolved') {
+                                tripPicture = "themes/images/missing.png";
+                                dfd.resolve();
+                            }
+                    }); 
+                    return dfd.promise();
+                }
+                
+                function onConfirmDeleteTrip(buttonIndex) {
+                    if (debug_mode) {
+                        console.log('You selected button ' + buttonIndex);
+                    }
+                    if (buttonIndex === 1) {
+                        persistence.transaction(function(tx) {
+                            Trip.findBy("name", itemToDelete, function(trip) {
+                                TripCategoryItem.all().filter("tripname", "=", itemToDelete)
+                                    .forEach(function(c) {
+                                        persistence.remove(c);
+                                });
+                                PlacePicture.all().filter("tripname", "=", itemToDelete)
+                                    .forEach(function(f) {
+                                        persistence.remove(f);
+                                });
+                                TripExpense.all().filter("tripname", "=", itemToDelete)
+                                    .forEach(function(s) {
+                                        persistence.remove(s);
+                                });
+                                TripPlace.all().filter("tripname", "=", itemToDelete)
+                                    .forEach(function(p) {
+                                        persistence.remove(p);
+                                });
+                                persistence.remove(trip);
+                            });
+                            persistence.flush(tx, function(tx1) { 
+                                if (tx1 === undefined || tx1.toString() === "") {
+                                    buildTriplist();
+                                }
+                                else {
+                                    navigator.notification.alert($.i18n.prop("msg_error_generic"), null, 'JourneyNotes', 'Ok');
+                                }
+                            });
+                        });
+                    }
+                }
+
+                // Click delete split-button to remove list item
+                function confirmAndDeleteTrip( listitem ) {
+                    
+                    itemToDelete = listitem;
+                    
+                    navigator.notification.confirm(
+                        $.i18n.prop("msg_confirm_delete", itemToDelete), // message
+                        onConfirmDeleteTrip,      // callback to invoke with index of button pressed
+                        'JourneyNotes',           // title
+                        [$.i18n.prop("msg_yes"), $.i18n.prop("msg_no")]     // buttonLabels
+                    );
+                }
+            </script>
+            
+            <div data-role="panel" data-position-fixed="true" id="mypanel" data-theme="b">
+                <!-- panel content goes here -->
+            </div><!-- /panel -->
+            
+            <div id="trips-header" data-role="header" data-position="fixed" data-tap-toggle="false" data-theme='b'>
+                <a href="#mypanel" data-ajax="false"><i class='lIcon fa fa-bars'></i></a>
+                <h1 id="trips_header_content"></h1>
+                <a id="trips_header_anchor" href='trip.html?tripname=' class="ui-btn ui-btn-inline ui-btn-right"><i class='lIcon fa fa-plus'></i></a>
+            </div><!-- /header -->
+
+            <div data-role="content">
+	        <div class='inset'>
+                    <ul id="triplist" data-role="listview" data-inset="true" data-filter="true" data-theme="b">                    
+                    </ul><!-- /listview -->                    
+                </div>
+            </div><!-- /content -->
+            
+        </div><!-- /page -->
+    </body>
+</html>

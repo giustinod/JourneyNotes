@@ -1,0 +1,114 @@
+
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>JourneyNotes</title>
+    </head>
+    <body>
+        <div id="category-items" data-role="page">
+
+            <script type="text/javascript">
+                
+                var itemToDelete;
+                var parameter;
+
+                $('#category-items').on('pageinit', function (e, data) {
+
+                    var parameters = $(this).data("url").split("?")[1];
+                    parameter = parameters.split("&")[0].replace("category=","");  
+
+                    ChecklistCategoryItem.all().filter("categoryname", "=", parameter)
+                                .forEach(null, function (item) {
+                                    
+                            var msg = "<li><a href='catalog_item.html?category="
+                                    + parameter + "&item=" 
+                                    + $(item).data('description') + "'>" 
+                                    + $(item).data('description')
+                                    + "</a><a href='javascript:confirmAndDelete(\""
+                                    + $(item).data('description')
+                                    + "\");' class='delete'>Delete</a></li>";
+                            document.querySelector('#itemlist').innerHTML +=  msg;
+                            $("#itemlist").listview("refresh");
+                    });
+                    
+                    var cancelLink = $("<a id='a_back' href='catalog.html?category=" + parameter + "' class='ui-btn ui-btn-inner'><i class='lIcon fa fa-backward'></i></a>");
+                    $('#category-items-controlgroup').append(cancelLink);
+                    var addLink = $("<a id='a_add' href='catalog_item.html?category=" + parameter + "&item=' class='ui-btn ui-btn-inner'><i class='lIcon fa fa-plus'></i></a>");
+                    $('#category-items-controlgroup').append(addLink);
+                    
+                    $('#checklist_items_title').empty().append(parameter);
+                    
+                    addPanel();
+                });
+
+                function onConfirmDelete(buttonIndex) {
+                    if (debug_mode) {
+                        console.log('You selected button ' + buttonIndex);
+                    }
+                    if (buttonIndex === 1) {
+                        ChecklistCategoryItem.all().filter("description", "=", itemToDelete)
+                                .forEach(function(item) {
+                            persistence.transaction(function(tx) {
+                                persistence.remove(item);
+                                persistence.flush(tx, function(tx) { 
+                                    if (tx === undefined || tx.toString() === "") {
+                                        $("#itemlist").empty();
+                                        ChecklistCategoryItem.all().filter("categoryname", "=", parameter)
+                                                    .list(null, function (items) {
+                                            items.forEach(function(item) {
+                                                var msg = "<li><a href='catalog_item.html?category="
+                                                        + parameter + "&item=" 
+                                                        + $(item).data('description') + "'>" 
+                                                        + $(item).data('description')
+                                                        + "</a><a href='javascript:confirmAndDelete(\""
+                                                        + $(item).data('description')
+                                                        + "\");' class='delete'>Delete</a></li>";
+                                                document.querySelector('#itemlist').innerHTML +=  msg;
+                                                $("#itemlist").listview("refresh");
+                                            });
+                                        });
+                                    }
+                                    else {
+                                        navigator.notification.alert(
+                                            $.i18n.prop("msg_error_generic"),
+                                            null, 'JourneyNotes', 'Ok');
+                                    }
+                                });
+                            });
+                        });
+                    }
+                }
+
+                // Click delete split-button to remove list item
+                function confirmAndDelete( listitem ) {
+                    itemToDelete = listitem;
+                    navigator.notification.confirm(
+                        $.i18n.prop("msg_confirm_delete", listitem), // message
+                        onConfirmDelete,          // callback to invoke with index of button pressed
+                        'JourneyNotes',           // title
+                        [$.i18n.prop("msg_yes"), $.i18n.prop("msg_no")]     // buttonLabels
+                    );
+                }
+            </script>
+
+            <div data-role="panel" data-position-fixed="true" id="mypanel" data-theme="b">
+                <!-- panel content goes here -->
+            </div><!-- /panel -->
+            
+            <div id="category-items-hd" data-role="header" data-position="fixed" data-tap-toggle="false" data-theme='b'>
+                <a href="#mypanel" data-ajax="false"><i class='lIcon fa fa-bars'></i></a>
+                <h1 id="checklist_items_title"></h1>
+                <div id="category-items-controlgroup" class="ui-btn-right">
+                </div>
+            </div><!-- /header -->
+
+            <div data-role="content">
+	        <div class='inset'>
+                    <ul id="itemlist" data-role="listview" data-inset="true" data-split-icon="delete" data-filter="true">
+                    </ul><!-- /listview -->    
+                </div>
+            </div><!-- /content -->
+        </div><!-- /page -->
+        
+    </body>
+</html>
