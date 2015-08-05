@@ -80,7 +80,7 @@
                 $('#itinerary').on('pageinit', function (e, data) {
 
                     var parameters = $(this).data("url").split("?")[1];
-                    tripname = parameters.replace("tripname=","");  
+                    tripname = parameters.replace("tripname=","").replace(/%27/g, "'");  
                     
                     $('#itinerary_title').empty().append($.i18n.prop("itinerary_title"));
                     $('#label_share').empty().append($.i18n.prop("label_share"));                    
@@ -99,24 +99,16 @@
             
                     buildListview();
                     
-                    var cancelLink = "<a id='a_back' href='trip.html?tripname=" + tripname
+                    var cancelLink = "<a id='a_back' href='trip.html?tripname=" + tripname.replace(/'/g, "%27")
                              + "' class='ui-btn ui-btn-inner'><i class='lIcon fa fa-backward'></i></a>";
                     $('#itinerary-header-controlgroup').append(cancelLink);
-                    
-                    TripPlace.all().filter("tripname", "=", tripname)
-                                    .count(null, function(numberOfItems) {
-                                        
-                        var addLink = "<a href='javascript:addToItinerary(" + numberOfItems 
-                            + ")' class='ui-btn ui-btn-inner'><i class='lIcon fa fa-plus'></i></a>";
-                        $('#itinerary-header-controlgroup').append(addLink);
-                    });
                     
                     addPanel();
                 });
                 
                 function addToItinerary(numberOfItems) {
                     
-                    $.mobile.changePage("place.html?tripname=" + tripname + "&startDate=" 
+                    $.mobile.changePage("place.html?tripname=" + tripname.replace(/'/g, "%27") + "&startDate=" 
                             + (numberOfItems + 1) + "&tab=0");
                 }
 
@@ -139,7 +131,7 @@
                 });
                 
                 function gotoPlace(dt) {
-                    var url = 'place.html?tripname=' + tripname + '&startDate=' + dt + '&tab=0';
+                    var url = 'place.html?tripname=' + tripname.replace(/'/g, "%27") + '&startDate=' + new Date(dt).getTime() + '&tab=0';
                     $.mobile.changePage(url);
                 }
                 
@@ -150,16 +142,19 @@
                                 .list(null, function (places) {
                         places.forEach(function(place) {
                             var content = "<li><a href='javascript:gotoPlace(\"" + 
-                                    $(place).data('startDate').getTime() + "\")'>" + 
+                                    $(place).data('startDate') + "\")'>" + 
                                     $(place).data('description') + 
                                     "</a><a href='javascript:confirmAndDeletePlace(\"" + 
-                                    $(place).data('description') + "\", \"" +
+                                    $(place).data('description').replace(/'/g, "%27") + "\", \"" +
                                     $(place).data('startDate') +
                                     "\")' data-icon='delete'>Delete</a></li>";
                             $(content).appendTo("#tripplacelist").enhanceWithin();
                             placesNo++;
                             $("#tripplacelist").listview("refresh");
                         });
+                        var addLink = "<a href='javascript:addToItinerary(" + placesNo 
+                            + ")' class='ui-btn ui-btn-inner'><i class='lIcon fa fa-plus'></i></a>";
+                        $('#itinerary-header-controlgroup').append(addLink);
                     });
                 }
 
@@ -384,72 +379,6 @@
                     }
                 }
                 
-                // see http://stackoverflow.com/questions/8682085/can-i-sync-up-multiple-image-onload-calls
-                // loader will 'load' items by calling thingToDo for each item,
-                // before calling allDone when all the things to do have been done.
-                /*
-                function loader(count, items, thingToDo, allDone) {
-                    if (debug_mode) {
-                        console.log("loader started with count = " + count);
-                    }
-                    if (count === 0) {
-                        allDone();
-                    }
-                    // this callback counts down the things to do.
-                    var thingToDoCompleted = function () {
-                        count--;
-                        if (debug_mode) {
-                            console.log("now count = " + count);
-                        }
-                        if (0 === count) {
-                            if (debug_mode) {
-                                console.log("calling allDone");
-                            }
-                            allDone();
-                        }
-                    };
-
-                    for (var fn in items) {
-                        // 'do' each thing, and await callback.
-                        thingToDo(items, fn, thingToDoCompleted);
-                    }
-                }
-
-                function loadPhoto(items, filename, onComplete) {
-
-                    loadImage(
-                        items[filename],
-                        function (img) {
-                            if (img.type === "error") {
-                                if (debug_mode) {
-                                    console.log("Error loading image " + items[filename]);
-                                }
-                                navigator.notification.alert(
-                                    $.i18n.prop("msg_error_generic"),
-                                    null, 'JourneyNotes', 'Ok');
-                            } 
-                            else {
-                                var dataURL = img.toDataURL("image/png");
-                                if (myblob === null) {
-                                    myblob = dataURL;
-                                }
-                                var myfilename = filename.substr(0, filename.lastIndexOf('.')) + ".png";
-                                var prefixRe = new RegExp("^data:image/[^;]+;base64,");
-                                var bStr = dataURL.replace(prefixRe, "");
-                                if (debug_mode) {
-                                    console.log("adding " + myfilename + " to zip, then uploading");
-                                }
-                                zip.file("images/" + myfilename, bStr, {base64: true});
-                                //saving image on google drive
-                                uploadFileGDrive(tripname, myfilename, bStr, "image/png");
-                            }
-                            // notify that we're done.
-                            onComplete();
-                        }, 
-                        { maxWidth: 600, canvas: true }
-                    );
-                }
-                */
                 function onConfirmDeletePlace(buttonIndex) {
                     if (debug_mode) {
                         console.log('You selected button ' + buttonIndex);
@@ -466,7 +395,7 @@
                                         persistence.remove(pict);
                                     });
                                     TripExpense.all().filter("tripname", "=", tripname)
-                                                .filter("place", "=", $(item).data('description'))
+                                                .filter("place", "=", $(item).data('description').replace(/%27/g, "'"))
                                                 .forEach(function(exp) {
                                         persistence.remove(exp);
                                     });
@@ -493,7 +422,7 @@
                     
                     startDateToDelete = startDate;
                     navigator.notification.confirm(
-                        $.i18n.prop("msg_confirm_delete", listitem), // message
+                        $.i18n.prop("msg_confirm_delete", listitem.replace(/%27/g, "'")), // message
                         onConfirmDeletePlace,          // callback to invoke with index of button pressed
                         'JourneyNotes',           // title
                         [$.i18n.prop("msg_yes"), $.i18n.prop("msg_no")]     // buttonLabels
@@ -618,7 +547,7 @@
                 function gotoCalendar() {
                     
                     if (placesNo > 0) {
-                        $.mobile.changePage('calendar.html?tripname=' + tripname, { transition: "slideup", changeHash: false });
+                        $.mobile.changePage('calendar.html?tripname=' + tripname.replace(/'/g, "%27"), { transition: "slideup", changeHash: false });
                     }
                     else {
                         navigator.notification.alert(

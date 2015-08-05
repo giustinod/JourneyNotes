@@ -52,7 +52,7 @@
                 
                 function dumpLocalDatabase (where) {
                     if (typeof gapi !== 'undefined') {
-                        persistence.dumpToJson(null, function(content) {                        
+                        persistence.dumpToJson(null, function(content) {  
                             if (where === 'google') {
                                 uploadFileGDrive("", "mytrip-localdb.dump", content, "application/json");
                             }

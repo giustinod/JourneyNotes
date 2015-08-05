@@ -21,7 +21,10 @@
                 $('#trip-expense').on('pageinit', function (e, data) {
 
                     var parameters = $(this).data("url").split("?")[1];
-                    tripname = parameters.split("&")[0].replace("tripname=","");  
+                    if (debug_mode) {
+                        console.log("params = " + parameters);
+                    }
+                    tripname = parameters.split("&")[0].replace("tripname=","").replace(/%27/g, "'");  
                     if (localStorage.getItem("mytrip_default_currency") !== null) {
                         default_currency = localStorage.getItem("mytrip_default_currency");
                     }
@@ -37,7 +40,7 @@
                             navigator.notification.alert(
                                 jQuery.i18n.prop("msg_error_date_pattern"),
                                 function () {
-                                    $.mobile.changePage("trip_expenses.html?tripname=" + tripname);
+                                    $.mobile.changePage("trip_expenses.html?tripname=" + tripname.replace(/'/g, "%27"));
                                 }, 'JourneyNotes', 'Ok');
                         },
                         {formatLength:'full', selector:'date'}
@@ -68,9 +71,13 @@
                     
                     if (parameters.split("&")[1] !== undefined) {
                         expcategory = parameters.split("&")[1].replace("expcategory=","");  
-                        description = parameters.split("&")[2].replace("description=","");  
+                        description = parameters.split("&")[2].replace("description=","").replace(/%27/g, "'");  
                         var strDt = parameters.split("&")[3].replace("eDate=","");  
-                        eDate = new Date(parseInt(strDt));  
+                        eDate = new Date(parseInt(strDt));
+                        if (debug_mode) {
+                            console.log("params date: " + eDate);
+                            console.log("params descr " + description);
+                        }
 
                         TripExpense.all().filter("tripname", "=", tripname)
                                 .filter("expcategory", "=", expcategory)
@@ -90,7 +97,7 @@
                     
                     $('#trip_expense_title').empty().append($.i18n.prop("trip_expense_title"));
 
-                    var cancelLink = "<a id='a_back' href='trip_expenses.html?tripname=" + tripname
+                    var cancelLink = "<a id='a_back' href='trip_expenses.html?tripname=" + tripname.replace(/'/g, "%27")
                              + "' class='ui-btn ui-btn-inner'><i class='lIcon fa fa-backward'></i></a>";
                     $('#tripexpense-header-controlgroup').append(cancelLink);
         
@@ -103,16 +110,16 @@
                                 }
                                 else
                                 {
-                                    $.when(findPlace()).then(
-                                        function () {
+                                    //$.when(findPlace()).then(
+                                    //    function () {
                                             saveExpense();
-                                        },
-                                        function () {
-                                            navigator.notification.alert(
-                                                jQuery.i18n.prop("msg_no_place_found"),
-                                                null, 'JourneyNotes', 'Ok');
-                                            e.preventDefault();
-                                        });
+                                    //    },
+                                    //    function () {
+                                    //        navigator.notification.alert(
+                                    //            jQuery.i18n.prop("msg_no_place_found"),
+                                    //            null, 'JourneyNotes', 'Ok');
+                                    //        e.preventDefault();
+                                    //    });
                                 }
                             });
 
@@ -181,7 +188,7 @@
                                 navigator.notification.alert(
                                     jQuery.i18n.prop("msg_saved", $("#description").val()),
                                     function () {
-                                        $.mobile.changePage("trip_expenses.html?tripname=" + tripname);
+                                        $.mobile.changePage("trip_expenses.html?tripname=" + tripname.replace(/'/g, "%27"));
                                     }, 'JourneyNotes', 'Ok');
                             }
                             else {

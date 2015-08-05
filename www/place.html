@@ -183,7 +183,7 @@
                     maxPicturesNo = localStorage.getItem("mytrip_max_no_img_per_place");
 
                     var parameters = $(this).data("url").split("?")[1];
-                    tripname = parameters.split("&")[0].replace("tripname=","");  
+                    tripname = parameters.split("&")[0].replace("tripname=","").replace(/%27/g, "'");  
                     var strDt = parameters.split("&")[1].replace("startDate=","");  
                     if (parseInt(strDt) > 1000) {
                         startDate = new Date(parseInt(strDt));
@@ -252,7 +252,7 @@
                         });
 
                     
-                    var cancelLink = "<a id='a_back' href='itinerary.html?tripname=" + tripname
+                    var cancelLink = "<a id='a_back' href='itinerary.html?tripname=" + tripname.replace(/'/g, "%27")
                              + "' class='ui-btn ui-btn-inner'><i class='lIcon fa fa-backward'></i></a>";
                     $('#place-header-controlgroup').append(cancelLink);
                     $('#place-header-controlgroup').append(saveLink);
@@ -395,9 +395,11 @@
                                     .forEach(function(pict) {
                                         $(pict).data('startDate', $("#sDate").val());
                                 });
+                                $(itemObj).data('startDate', $("#sDate").val());
                             }
-                            $(itemObj).data('startDate', $("#sDate").val());
-                            $(itemObj).data('endDate', $("#eDate").val());
+                            if ($(itemObj).data('endDate') !== $("#eDate").val()) {
+                                $(itemObj).data('endDate', $("#eDate").val());
+                            }
                             $(itemObj).data('notes', $("#notes").val());
                             $(itemObj).data('updated', new Date());
                         }
@@ -711,7 +713,7 @@
                 
                 function getPosition () {
                     
-                    if ($("#description").val() === "") {
+                    if ($("#description").val() === "" && window.navigator.onLine) {
                         
                         navigator.geolocation.getCurrentPosition(
                             function (position) {

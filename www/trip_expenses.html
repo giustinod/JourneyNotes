@@ -32,7 +32,7 @@
                         
                     var parameters = $(this).data("url").split("?")[1];
                     if (parameters !== undefined) {
-                        tripname = parameters.split("&")[0].replace("tripname=",""); 
+                        tripname = parameters.split("&")[0].replace("tripname=","").replace(/%27/g, "'"); 
                     }
                     
                     navigator.globalization.getDatePattern(
@@ -49,10 +49,10 @@
             
                     $('#trip_expenses_title').empty().append($.i18n.prop("expenses_header"));
                     
-                    var cancelLink = "<a id='a_back' href='trip.html?tripname=" + tripname
+                    var cancelLink = "<a id='a_back' href='trip.html?tripname=" + tripname.replace(/'/g, "%27")
                              + "' class='ui-btn ui-btn-inner'><i class='lIcon fa fa-backward'></i></a>";
                     $('#tripexpenses-header-controlgroup').append(cancelLink);
-                    var addLink = "<a href='trip_expense.html?tripname=" + tripname + 
+                    var addLink = "<a href='trip_expense.html?tripname=" + tripname.replace(/'/g, "%27") + 
                             "' class='ui-btn ui-btn-inner'><i class='lIcon fa fa-plus'></i></a>";
                     $('#tripexpenses-header-controlgroup').append(addLink);
                     
@@ -75,14 +75,17 @@
                             else {
                                 mydate = $(item).data('eDate');
                             }
+                            var escDescr = $(item).data('description').replace(/'/g, "%27");
+                            if (debug_mode) {
+                                console.log("encoded desc: " + escDescr);
+                            }
                             var content = "<tr><td><a href='javascript:confirmAndDelete(\""
-                                + tripname + "\", \"" + $(item).data('expcategory')
-                                + "\", \"" + $(item).data('description')
-                                + "\", \"" + mydate
+                                + tripname.replace(/'/g, "%27") + "\", \"" + $(item).data('expcategory')
+                                + "\", \"" + escDescr + "\", \"" + mydate
                                 + "\")' class='ui-btn ui-icon-delete ui-btn-icon-notext ui-corner-all'>Delete</a></td>"
                                 + "<td><a href='trip_expense.html?tripname="
-                                + tripname + "&expcategory=" + $(item).data('expcategory')
-                                + "&description=" + $(item).data('description') + "&eDate=" 
+                                + tripname.replace(/'/g, "%27") + "&expcategory=" + $(item).data('expcategory')
+                                + "&description=" + escDescr + "&eDate=" 
                                 + mydate.getTime() + "' >" 
                                 + $(item).data('description') + "</a></td>"
                                 + "<td>" + mydate.toString(date_pattern) + "</td>"
@@ -132,7 +135,7 @@
                 // Click delete split-button to remove list item
                 function confirmAndDelete( trip, category, descr, edate ) {
                     
-                    descrToDelete = descr;
+                    descrToDelete = descr.replace(/%27/g, "'");
                     categoryToDelete = category;
                     eDateToDelete = edate;
                     

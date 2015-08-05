@@ -86,7 +86,7 @@ function loadCurrencies(callback) {
                 + $.i18n.prop("openexchangerates.id"),
         dataType: 'jsonp',
         beforeSend: function () {
-            $.mobile.loading("show", {text: "loading", textVisible: true});
+            $.mobile.loading("show", {text: "loading exchange rates", textVisible: true});
         },
         success: function(json) {
             // Rates are in `json.rates`

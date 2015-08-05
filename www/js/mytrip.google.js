@@ -4,22 +4,6 @@
 var folderId;
 var calendarId;
 
-/**
- * Called when the client library is loaded.
- * REMOVED if user deletes this directory the app continues to write there
- *
-function handleClientLoad() {
-    
-    folderId = localStorage.getItem("mytrip_gdrive_folderid");
-    if (folderId === null) {
-        getMyTripFolder();
-    }
-    if (debug_mode) {
-        console.log("fid: " + folderId);
-    }
-}
-*/
-
 /*
  * 
  * @param {type} callback
@@ -41,6 +25,8 @@ function getToken(callback) {
         if (debug_mode) {
             console.log("Token no more valid: " + localStorage.getItem("mytrip_google_access_token"));
         }
+        localStorage.removeItem("mytrip_google_access_token");
+        localStorage.removeItem("mytrip_google_expires_at");
         //The token is expired, but we can get a new one with a refresh token
         $.post('https://accounts.google.com/o/oauth2/token', {
             client_id: $.i18n.prop("google.client_id"), // required
@@ -179,6 +165,9 @@ function uploadFileGDrive(tripname, filename, content, fileType, cb) {
 
     var blob = new Blob([content], { type: fileType });
     blob.name = filename;
+    if (debug_mode) {
+        console.log("size: " + blob.size);
+    }
     if (blob.size > 0) {
         if (fileType.indexOf("image") > -1) {
             if (debug_mode) {

@@ -14,7 +14,7 @@
                 $('#trip-category-item').on('pageinit', function (e, data) {
 
                     var parameters = $(this).data("url").split("?")[1];
-                    tripname = parameters.split("&")[0].replace("tripname=","");  
+                    tripname = parameters.split("&")[0].replace("tripname=","").replace(/%27/g, "'");  
                     
                     if ($(this).data("url").split("&")[1] !== undefined) {
                         category = $(this).data("url").split("&")[1].replace("category=","");  
@@ -58,12 +58,12 @@
                     jQuery('#label_notes').empty().append(jQuery.i18n.prop("label_notes"));
                     jQuery('#label_ready').empty().append(jQuery.i18n.prop("label_ready"));
                     
-                    var cancelLink = "<a id='a_back' href='trip_checklist.html?tripname=" + tripname
+                    var cancelLink = "<a id='a_back' href='trip_checklist.html?tripname=" + tripname.replace(/'/g, "%27")
                              + "' class='ui-btn ui-btn-inner'><i class='lIcon fa fa-backward'></i></a>";
                     $('#checklistitem-header-controlgroup').append(cancelLink);
 
                     var saveLink = $("<a href='trip_checklist.html?tripname=" + 
-                        tripname + "' class='ui-btn ui-btn-inner'><i class='lIcon fa fa-save'></i></a>")
+                        tripname.replace(/'/g, "%27") + "' class='ui-btn ui-btn-inner'><i class='lIcon fa fa-save'></i></a>")
                             .click(function(e) {
                                 if (itemObj !== null)
                                 {

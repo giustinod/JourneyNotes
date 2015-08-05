@@ -120,60 +120,6 @@ function initDb() {
         
         persistence.store.websql.config(persistence, "mytrip", 'database', 5 * 1024 * 1024);
         
-        var b1 = new PaymentMethod({expcategory: $.i18n.prop("pm_cash")});
-        var b2 = new PaymentMethod({expcategory: $.i18n.prop("pm_transfer")});
-        var b3 = new PaymentMethod({expcategory: "Mastercard"});
-        var b4 = new PaymentMethod({expcategory: "VISA"});
-        var b5 = new PaymentMethod({expcategory: $.i18n.prop("pm_withdrawal")});
-
-        //Clothes
-        var c1 = new ChecklistCategory({name: $.i18n.prop("chk_clothes")});
-        var clothes = [];
-        clothes.push(new ChecklistCategoryItem({categoryname: $.i18n.prop("chk_clothes"), description: $.i18n.prop("chk_dresses"), quantity: 1}));
-        clothes.push(new ChecklistCategoryItem({categoryname: $.i18n.prop("chk_clothes"), description: $.i18n.prop("chk_trousers"), quantity: 1}));
-        clothes.push(new ChecklistCategoryItem({categoryname: $.i18n.prop("chk_clothes"), description: $.i18n.prop("chk_shirts"), quantity: 1}));
-        clothes.push(new ChecklistCategoryItem({categoryname: $.i18n.prop("chk_clothes"), description: $.i18n.prop("chk_sweaters"), quantity: 1}));
-        clothes.push(new ChecklistCategoryItem({categoryname: $.i18n.prop("chk_clothes"), description: $.i18n.prop("chk_jackets"), quantity: 1}));
-        clothes.push(new ChecklistCategoryItem({categoryname: $.i18n.prop("chk_clothes"), description: $.i18n.prop("chk_raincoat"), quantity: 1}));
-        clothes.push(new ChecklistCategoryItem({categoryname: $.i18n.prop("chk_clothes"), description: $.i18n.prop("chk_pyjamas"), quantity: 1}));
-        clothes.push(new ChecklistCategoryItem({categoryname: $.i18n.prop("chk_clothes"), description: $.i18n.prop("chk_socks"), quantity: 1}));
-        clothes.push(new ChecklistCategoryItem({categoryname: $.i18n.prop("chk_clothes"), description: $.i18n.prop("chk_slips"), quantity: 1}));
-        clothes.push(new ChecklistCategoryItem({categoryname: $.i18n.prop("chk_clothes"), description: $.i18n.prop("chk_shoes"), quantity: 1}));
-        clothes.push(new ChecklistCategoryItem({categoryname: $.i18n.prop("chk_clothes"), description: $.i18n.prop("chk_slippers"), quantity: 1}));
-        //Hygiene
-        var c2 = new ChecklistCategory({name: $.i18n.prop("chk_hygiene")});
-        var hygiene = [];
-        hygiene.push(new ChecklistCategoryItem({categoryname: $.i18n.prop("chk_hygiene"), description: $.i18n.prop("chk_toothbrush"), quantity: 1}));
-        hygiene.push(new ChecklistCategoryItem({categoryname: $.i18n.prop("chk_hygiene"), description: $.i18n.prop("chk_toothpaste"), quantity: 1}));
-        hygiene.push(new ChecklistCategoryItem({categoryname: $.i18n.prop("chk_hygiene"), description: $.i18n.prop("chk_shampoo"), quantity: 1}));
-        hygiene.push(new ChecklistCategoryItem({categoryname: $.i18n.prop("chk_hygiene"), description: $.i18n.prop("chk_bubblebath"), quantity: 1}));
-        hygiene.push(new ChecklistCategoryItem({categoryname: $.i18n.prop("chk_hygiene"), description: $.i18n.prop("chk_shavingfoam"), quantity: 1}));
-        hygiene.push(new ChecklistCategoryItem({categoryname: $.i18n.prop("chk_hygiene"), description: $.i18n.prop("chk_razor"), quantity: 1}));
-        hygiene.push(new ChecklistCategoryItem({categoryname: $.i18n.prop("chk_hygiene"), description: $.i18n.prop("chk_deodorant"), quantity: 1}));
-        //Miscellanea
-        var c3 = new ChecklistCategory({name: $.i18n.prop("chk_miscellanea")});
-        var misc = [];
-        misc.push(new ChecklistCategoryItem({categoryname: $.i18n.prop("chk_miscellanea"), description: $.i18n.prop("chk_electric_adapter"), quantity: 1}));
-        misc.push(new ChecklistCategoryItem({categoryname: $.i18n.prop("chk_miscellanea"), description: $.i18n.prop("chk_notepad"), quantity: 1}));
-        //Drugs
-        var c4 = new ChecklistCategory({name: $.i18n.prop("chk_drugs")});
-        var drugs = [];
-        drugs.push(new ChecklistCategoryItem({categoryname: $.i18n.prop("chk_drugs"), description: $.i18n.prop("chk_antihistamine"), quantity: 1}));
-        drugs.push(new ChecklistCategoryItem({categoryname: $.i18n.prop("chk_drugs"), description: $.i18n.prop("chk_analgesic"), quantity: 1}));
-        drugs.push(new ChecklistCategoryItem({categoryname: $.i18n.prop("chk_drugs"), description: $.i18n.prop("chk_antierythema"), quantity: 1}));
-        drugs.push(new ChecklistCategoryItem({categoryname: $.i18n.prop("chk_drugs"), description: $.i18n.prop("chk_usual_med"), quantity: 1}));
-        //Luggage
-        var c5 = new ChecklistCategory({name: $.i18n.prop("chk_luggage")});
-        var luggage = [];
-        luggage.push(new ChecklistCategoryItem({categoryname: $.i18n.prop("chk_luggage"), description: $.i18n.prop("chk_luggages"), quantity: 1}));
-        luggage.push(new ChecklistCategoryItem({categoryname: $.i18n.prop("chk_luggage"), description: $.i18n.prop("chk_padlock"), quantity: 1}));
-        luggage.push(new ChecklistCategoryItem({categoryname: $.i18n.prop("chk_luggage"), description: $.i18n.prop("chk_sunglasses"), quantity: 1}));
-        luggage.push(new ChecklistCategoryItem({categoryname: $.i18n.prop("chk_luggage"), description: $.i18n.prop("chk_photo"), quantity: 1}));
-        luggage.push(new ChecklistCategoryItem({categoryname: $.i18n.prop("chk_luggage"), description: $.i18n.prop("chk_battery_charger"), quantity: 1}));
-        luggage.push(new ChecklistCategoryItem({categoryname: $.i18n.prop("chk_luggage"), description: $.i18n.prop("chk_documents"), quantity: 1}));
-        luggage.push(new ChecklistCategoryItem({categoryname: $.i18n.prop("chk_luggage"), description: $.i18n.prop("chk_books"), quantity: 1}));
-        luggage.push(new ChecklistCategoryItem({categoryname: $.i18n.prop("chk_luggage"), description: $.i18n.prop("chk_bookings"), quantity: 1}));
-        
         persistence.schemaSync(function () {
 
             Currency.all().count(null, function(num_items) {
@@ -184,6 +130,62 @@ function initDb() {
 
             PaymentMethod.all().count(null, function(num_items) {
                 if (num_items === 0) {
+
+                    $.mobile.loading("show", {text: "loading data", textVisible: true});
+                    
+                    var b1 = new PaymentMethod({expcategory: $.i18n.prop("pm_cash")});
+                    var b2 = new PaymentMethod({expcategory: $.i18n.prop("pm_transfer")});
+                    var b3 = new PaymentMethod({expcategory: "Mastercard"});
+                    var b4 = new PaymentMethod({expcategory: "VISA"});
+                    var b5 = new PaymentMethod({expcategory: $.i18n.prop("pm_withdrawal")});
+
+                    //Clothes
+                    var c1 = new ChecklistCategory({name: $.i18n.prop("chk_clothes")});
+                    var clothes = [];
+                    clothes.push(new ChecklistCategoryItem({categoryname: $.i18n.prop("chk_clothes"), description: $.i18n.prop("chk_dresses"), quantity: 1}));
+                    clothes.push(new ChecklistCategoryItem({categoryname: $.i18n.prop("chk_clothes"), description: $.i18n.prop("chk_trousers"), quantity: 1}));
+                    clothes.push(new ChecklistCategoryItem({categoryname: $.i18n.prop("chk_clothes"), description: $.i18n.prop("chk_shirts"), quantity: 1}));
+                    clothes.push(new ChecklistCategoryItem({categoryname: $.i18n.prop("chk_clothes"), description: $.i18n.prop("chk_sweaters"), quantity: 1}));
+                    clothes.push(new ChecklistCategoryItem({categoryname: $.i18n.prop("chk_clothes"), description: $.i18n.prop("chk_jackets"), quantity: 1}));
+                    clothes.push(new ChecklistCategoryItem({categoryname: $.i18n.prop("chk_clothes"), description: $.i18n.prop("chk_raincoat"), quantity: 1}));
+                    clothes.push(new ChecklistCategoryItem({categoryname: $.i18n.prop("chk_clothes"), description: $.i18n.prop("chk_pyjamas"), quantity: 1}));
+                    clothes.push(new ChecklistCategoryItem({categoryname: $.i18n.prop("chk_clothes"), description: $.i18n.prop("chk_socks"), quantity: 1}));
+                    clothes.push(new ChecklistCategoryItem({categoryname: $.i18n.prop("chk_clothes"), description: $.i18n.prop("chk_slips"), quantity: 1}));
+                    clothes.push(new ChecklistCategoryItem({categoryname: $.i18n.prop("chk_clothes"), description: $.i18n.prop("chk_shoes"), quantity: 1}));
+                    clothes.push(new ChecklistCategoryItem({categoryname: $.i18n.prop("chk_clothes"), description: $.i18n.prop("chk_slippers"), quantity: 1}));
+                    //Hygiene
+                    var c2 = new ChecklistCategory({name: $.i18n.prop("chk_hygiene")});
+                    var hygiene = [];
+                    hygiene.push(new ChecklistCategoryItem({categoryname: $.i18n.prop("chk_hygiene"), description: $.i18n.prop("chk_toothbrush"), quantity: 1}));
+                    hygiene.push(new ChecklistCategoryItem({categoryname: $.i18n.prop("chk_hygiene"), description: $.i18n.prop("chk_toothpaste"), quantity: 1}));
+                    hygiene.push(new ChecklistCategoryItem({categoryname: $.i18n.prop("chk_hygiene"), description: $.i18n.prop("chk_shampoo"), quantity: 1}));
+                    hygiene.push(new ChecklistCategoryItem({categoryname: $.i18n.prop("chk_hygiene"), description: $.i18n.prop("chk_bubblebath"), quantity: 1}));
+                    hygiene.push(new ChecklistCategoryItem({categoryname: $.i18n.prop("chk_hygiene"), description: $.i18n.prop("chk_shavingfoam"), quantity: 1}));
+                    hygiene.push(new ChecklistCategoryItem({categoryname: $.i18n.prop("chk_hygiene"), description: $.i18n.prop("chk_razor"), quantity: 1}));
+                    hygiene.push(new ChecklistCategoryItem({categoryname: $.i18n.prop("chk_hygiene"), description: $.i18n.prop("chk_deodorant"), quantity: 1}));
+                    //Miscellanea
+                    var c3 = new ChecklistCategory({name: $.i18n.prop("chk_miscellanea")});
+                    var misc = [];
+                    misc.push(new ChecklistCategoryItem({categoryname: $.i18n.prop("chk_miscellanea"), description: $.i18n.prop("chk_electric_adapter"), quantity: 1}));
+                    misc.push(new ChecklistCategoryItem({categoryname: $.i18n.prop("chk_miscellanea"), description: $.i18n.prop("chk_notepad"), quantity: 1}));
+                    //Drugs
+                    var c4 = new ChecklistCategory({name: $.i18n.prop("chk_drugs")});
+                    var drugs = [];
+                    drugs.push(new ChecklistCategoryItem({categoryname: $.i18n.prop("chk_drugs"), description: $.i18n.prop("chk_antihistamine"), quantity: 1}));
+                    drugs.push(new ChecklistCategoryItem({categoryname: $.i18n.prop("chk_drugs"), description: $.i18n.prop("chk_analgesic"), quantity: 1}));
+                    drugs.push(new ChecklistCategoryItem({categoryname: $.i18n.prop("chk_drugs"), description: $.i18n.prop("chk_antierythema"), quantity: 1}));
+                    drugs.push(new ChecklistCategoryItem({categoryname: $.i18n.prop("chk_drugs"), description: $.i18n.prop("chk_usual_med"), quantity: 1}));
+                    //Luggage
+                    var c5 = new ChecklistCategory({name: $.i18n.prop("chk_luggage")});
+                    var luggage = [];
+                    luggage.push(new ChecklistCategoryItem({categoryname: $.i18n.prop("chk_luggage"), description: $.i18n.prop("chk_luggages"), quantity: 1}));
+                    luggage.push(new ChecklistCategoryItem({categoryname: $.i18n.prop("chk_luggage"), description: $.i18n.prop("chk_padlock"), quantity: 1}));
+                    luggage.push(new ChecklistCategoryItem({categoryname: $.i18n.prop("chk_luggage"), description: $.i18n.prop("chk_sunglasses"), quantity: 1}));
+                    luggage.push(new ChecklistCategoryItem({categoryname: $.i18n.prop("chk_luggage"), description: $.i18n.prop("chk_photo"), quantity: 1}));
+                    luggage.push(new ChecklistCategoryItem({categoryname: $.i18n.prop("chk_luggage"), description: $.i18n.prop("chk_battery_charger"), quantity: 1}));
+                    luggage.push(new ChecklistCategoryItem({categoryname: $.i18n.prop("chk_luggage"), description: $.i18n.prop("chk_documents"), quantity: 1}));
+                    luggage.push(new ChecklistCategoryItem({categoryname: $.i18n.prop("chk_luggage"), description: $.i18n.prop("chk_books"), quantity: 1}));
+                    luggage.push(new ChecklistCategoryItem({categoryname: $.i18n.prop("chk_luggage"), description: $.i18n.prop("chk_bookings"), quantity: 1}));
 
                     persistence.add(b1);
                     persistence.add(b2);
@@ -214,12 +216,12 @@ function initDb() {
                         persistence.add(luggage[c]);
                     }
                     persistence.flush(null, function(tx) { 
+                        $.mobile.loading("hide");
                         if (tx === undefined || tx.toString() === "") {
                             if (debug_mode) {
                                 console.log("Database initialized");
                             }
                             $('#trips_header_content').empty().append($.i18n.prop("trips_header"));                    
-                            buildTriplist();
                             addPanel();
                         }
                         else {
@@ -228,7 +230,6 @@ function initDb() {
                                 null, 'JourneyNotes', 'Ok');
                         }
                     });
-
                 }
                 else {
                     if (debug_mode) {

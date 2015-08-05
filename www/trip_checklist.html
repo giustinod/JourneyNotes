@@ -33,11 +33,11 @@
 
                     var parameters = $(this).data("url").split("?")[1];
                     if (parameters !== undefined) {
-                        tripname = parameters.split("&")[0].replace("tripname=",""); 
+                        tripname = parameters.split("&")[0].replace("tripname=","").replace(/%27/g, "'"); 
                     }
                     $('#trip_checklist_title').empty().append($.i18n.prop("trip_checklist_title"));
 
-                    var cancelLink = "<a id='a_back' href='trip.html?tripname=" + tripname
+                    var cancelLink = "<a id='a_back' href='trip.html?tripname=" + tripname.replace(/'/g, "%27")
                              + "' class='ui-btn ui-btn-inner'><i class='lIcon fa fa-backward'></i></a>";
                     $('#tripchecklist-header-controlgroup').append(cancelLink);
         
@@ -80,6 +80,10 @@
                                 }
                             });
                         });
+                    }
+                    else {
+                        //just insert new record
+                        $.mobile.changePage("trip_catalog_item.html?tripname=" + tripname.replace(/'/g, "%27"));
                     }
                 }
 
@@ -165,7 +169,7 @@
                                 category = $(item).data('categoryname');
                             }
                             content += "<li><a href='trip_catalog_item.html?tripname="
-                                + tripname + "&category=" + $(item).data('categoryname') + "&item=" 
+                                + tripname.replace(/'/g, "%27") + "&category=" + $(item).data('categoryname') + "&item=" 
                                 + $(item).data('description') + "' >" 
                                 + $(item).data('description') 
                                 + " <span class='ui-li-count'>" 

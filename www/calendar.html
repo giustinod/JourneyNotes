@@ -32,7 +32,7 @@ and open the template in the editor.
                     var bgColor = null;
                     
                     var parameters = $(this).data("url").split("?")[1];
-                    tripname = parameters.replace("tripname=","");  
+                    tripname = parameters.replace("tripname=","").replace(/%27/g, "'");  
                     
                     $('#calendar_title').empty().append($.i18n.prop("calendar_title"));
                     $('#sync_header').empty().append($.i18n.prop("sync_header"));
@@ -41,27 +41,39 @@ and open the template in the editor.
                         gMapsScriptLoaded = true;
                     }
                     
-                    TripPlace.all().filter("tripname", "=", tripname).order('startDate', true)
+                    TripPlace.all().order('startDate', true)
                             .list(null, function (places) {
-                                
                         places.forEach(function(place) {
                             
                             if (startDate === null) {
                                 startDate = $(place).data('startDate');
                                 $('#calendar').fullCalendar({
                                     // put your options and callbacks here
-                                    defaultDate: startDate,
+                                    defaultDate: new Date(),
                                     lang: localStorage.getItem("mytrip_lang"),
                                     dayClick: function(date, jsEvent, view) {
-                                        var url = "place.html?tripname=" + tripname + "&startDate=" 
+                                        if (debug_mode) {
+                                            console.log("trip: " + tripname);
+                                        }
+                                        var url = "place.html?tripname=" + tripname.replace(/'/g, "%27") + "&startDate=" 
                                                 + new Date(date).getTime() + "&tab=0";
                                         $.mobile.changePage(url);
                                     },
                                     eventClick: function(calEvent, jsEvent, view) {
                                         if (calEvent.textColor === '#FFFFFF') {
-                                            var url = "place.html?tripname=" + tripname + "&startDate=" 
-                                                    + new Date(calEvent.start).getTime() + "&tab=0";
-                                            $.mobile.changePage(url);
+                                            if (debug_mode) {
+                                                console.log("trip: " + calEvent.title);
+                                            }
+                                            TripPlace.all().filter("description", "=", calEvent.title)
+                                                .filter("startDate", "=", calEvent.start)
+                                                        .list(null, function (places) {
+
+                                                places.forEach(function(place) {
+                                                    var url = "place.html?tripname=" + $(place).data('tripname').replace(/'/g, "%27") 
+                                                            + "&startDate=" + new Date(calEvent.start).getTime() + "&tab=0";
+                                                    $.mobile.changePage(url);
+                                                });
+                                            });
                                         }
                                         else {
                                             window.open(calEvent.googleref, "_system");
@@ -86,6 +98,9 @@ and open the template in the editor.
                                 textColor: "#FFFFFF"
                             };
                             events.push($(place).data('description') + getDateFromField($(place).data('startDate')));
+                            if ($(place).data('tripname') === tripname) {
+                                $('#calendar').fullCalendar('gotoDate', $(place).data('startDate'));
+                            }
                             $('#calendar').fullCalendar('renderEvent', event, true);
                         });
                         if (gMapsScriptLoaded && navigator.connection.type !== Connection.NONE) {
@@ -96,7 +111,7 @@ and open the template in the editor.
                         }
                     });
                     
-                    var cancelLink = "<a id='a_back' href='itinerary.html?tripname=" + tripname
+                    var cancelLink = "<a id='a_back' href='itinerary.html?tripname=" + tripname.replace(/'/g, "%27")
                              + "' class='ui-btn ui-btn-inner'><i class='lIcon fa fa-backward'></i></a>";
                     $('#calendar-header-controlgroup').append(cancelLink);
                     

@@ -14,7 +14,7 @@
                 $('#trip-item').on('pageinit', function (e, data) {
 
                     var parameters = $(this).data("url").split("?")[1];
-                    tripname = parameters.split("&")[0].replace("tripname=","");  
+                    tripname = parameters.split("&")[0].replace("tripname=","").replace(/%27/g, "'");  
 
                     Trip.findBy("name", tripname, function(item) {
                         if (item !== null) {
@@ -122,7 +122,7 @@
                             null, 'JourneyNotes', 'Ok');
                     }
                     else {
-                        $.mobile.changePage(page + "?tripname=" + tripname);
+                        $.mobile.changePage(page + "?tripname=" + tripname.replace(/'/g, "%27"));
                     }
                 }
                 

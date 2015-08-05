@@ -76,13 +76,12 @@
                         }
                         tripPicture = null;
                         $.when(getTripDefaultPicture($(trip).data('name'))).then(function () {
-                            var content = "<li><a href='trip.html?tripname=" + $(trip).data('name') + "'>" +
-                                    "<img src='" + tripPicture + "' style='max-width: 100px;'>" +
-                                    //"<img src='" + $(trip).data('exportUrl') + "' style='max-width: 100px;'>" +
+                            var content = "<li><a href='trip.html?tripname=" + $(trip).data('name').replace(/'/g, "%27") + 
+                                    "'><img src='" + tripPicture + "' style='max-width: 100px;'>" +
                                     "<h2>" + $(trip).data('name') + "</h2>" +
                                     "<p>" + $(trip).data('notes') + "</p></a>" +
                                     "<a href='#' onclick='confirmAndDeleteTrip(\"" + 
-                                    $(trip).data('name') + "\")' data-icon='delete'>Delete</a></li>";
+                                    $(trip).data('name').replace(/'/g, "%27") + "\")' data-icon='delete'>Delete</a></li>";
                             $(content).appendTo("#triplist").enhanceWithin();
                             $("#triplist").listview("refresh");
                         }); 
@@ -149,7 +148,7 @@
                 // Click delete split-button to remove list item
                 function confirmAndDeleteTrip( listitem ) {
                     
-                    itemToDelete = listitem;
+                    itemToDelete = listitem.replace(/%27/g, "'");
                     
                     navigator.notification.confirm(
                         $.i18n.prop("msg_confirm_delete", itemToDelete), // message
