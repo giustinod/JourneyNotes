@@ -179,7 +179,7 @@ function uploadFileGDrive(tripname, filename, content, fileType, cb) {
             if (debug_mode) {
                 console.log("calling insertFile");
             }
-            insertFile(tripname, blob, cb);
+            insertFile(tripname, blob);
         }
     }
     else {
@@ -195,7 +195,7 @@ function uploadFileGDrive(tripname, filename, content, fileType, cb) {
  * @param {type} callback
  * @returns {undefined}
  */
-function insertFile(tripname, fileData, cb) {
+function insertFile(tripname, fileData) {
     
     boundary = '-------314159265358979323846';
     delimiter = "\r\n--" + boundary + "\r\n";
@@ -214,16 +214,6 @@ function insertFile(tripname, fileData, cb) {
                   'id': folderId
                 }]
             };
-            var base64Data = btoa(reader.result);
-            var multipartRequestBody =
-                delimiter + 'Content-Type: application/json\r\n\r\n' +
-                JSON.stringify(metadata) +
-                delimiter +
-                'Content-Type: ' + contentType + '\r\n' +
-                'Content-Transfer-Encoding: base64\r\n' +
-                '\r\n' +
-                base64Data +
-                close_delim;
             var request = gapi.client.request({
                 'path': '/upload/drive/v2/files?access_token=' + 
                         localStorage.getItem("mytrip_google_access_token"),
@@ -232,8 +222,16 @@ function insertFile(tripname, fileData, cb) {
                 'headers': {
                     'Content-Type': 'multipart/mixed; boundary="' + boundary + '"'
                 },
-                'body': multipartRequestBody});
+                'body': delimiter + 'Content-Type: application/json\r\n\r\n' +
+                            JSON.stringify(metadata) + delimiter +
+                            'Content-Type: ' + contentType + '\r\n' +
+                            'Content-Transfer-Encoding: base64\r\n' +
+                            '\r\n' + btoa(reader.result) + close_delim 
+                });
             var callback = function(resp) {
+                if (debug_mode) {
+                    console.log("Callback called: " + resp.error);
+                }
                 $.mobile.loading("hide");
                 if (!resp.error) {
                     if (debug_mode) {
@@ -255,13 +253,15 @@ function insertFile(tripname, fileData, cb) {
                                     url = resp.alternateLink;
                                 }
                                 persistence.transaction(function(t) {
-                                    Trip.all().filter("name", "=", tripname)
-                                        .forEach(function(item) {
-                                            if (debug_mode) {
-                                                console.log("Exported file at url: " + url);
-                                            }
-                                            $(item).data('exportUrl', url);
-                                    });
+                                    if (tripname !== null) {
+                                        Trip.all().filter("name", "=", tripname)
+                                            .forEach(function(item) {
+                                                if (debug_mode) {
+                                                    console.log("Exported file at url: " + url);
+                                                }
+                                                $(item).data('exportUrl', url);
+                                        });
+                                    }
                                     persistence.flush(t, function(tx) {
                                         if (typeof tx !== 'undefined' && tx.toString() !== "") {
                                             navigator.notification.alert(
@@ -291,6 +291,9 @@ function insertFile(tripname, fileData, cb) {
                 }
             };
             request.execute(callback);
+            if (debug_mode) {
+                console.log("Google request executed!");
+            }
         };
         reader.readAsBinaryString(fileData);
     });

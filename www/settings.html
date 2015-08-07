@@ -54,7 +54,18 @@
                     if (typeof gapi !== 'undefined') {
                         persistence.dumpToJson(null, function(content) {  
                             if (where === 'google') {
-                                uploadFileGDrive("", "mytrip-localdb.dump", content, "application/json");
+                                var blob = new Blob([content], { type: "application/json" });
+                                blob.name = "mytrip-localdb.dump";
+                                if (debug_mode) {
+                                    console.log("size: " + blob.size);
+                                }
+                                if (blob.size > 0) {
+                                    if (debug_mode) {
+                                        console.log("calling insertFile");
+                                    }
+                                    insertFile(null, blob);
+                                }
+                                //uploadFileGDrive("", "mytrip-localdb.dump", content, "application/json");
                             }
                         });
                     }

@@ -182,13 +182,8 @@
                                         if (debug_mode) {
                                             console.log("photo[" + idx + "] = " + $(item).data('picture'));
                                         }
-                                        /*
-                                        loadPhotos($(item).data('pictureUri'), 
-                                            function (b64data, w, h) {
-                                                $("#slide1_images").append("<img src='" + b64data + "'/>");
-                                            });
-                                        */
-                                        $("#slide1_images").append("<img src='" + $(item).data('rawdata') + "'/>");
+                                        $("#slide1_images").append("<img src='" + $(item).data('rawdata')
+                                                + "' style='width: " + window.screen.availWidth + "px;'/>");
                                         if ($(item).data('picture') === pictname) {
                                             $('#flipimage_title').empty().append($(item).data('description'));
                                             //set current image

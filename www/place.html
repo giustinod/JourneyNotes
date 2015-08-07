@@ -242,7 +242,7 @@
                             }
                             else
                             {
-                                if (gMapsScriptLoaded && navigator.connection.type !== Connection.NONE) {  
+                                if (gMapsScriptLoaded && window.navigator.onLine) {  
                                     geocodeAndSave();
                                 }
                                 else {
@@ -395,10 +395,18 @@
                                     .forEach(function(pict) {
                                         $(pict).data('startDate', $("#sDate").val());
                                 });
+                                if (debug_mode) {
+                                    console.log("sdateDb: " + $(itemObj).data('startDate') 
+                                            + ", sdateUi: " + $("#sDate").val());
+                                }
                                 $(itemObj).data('startDate', $("#sDate").val());
                             }
                             if ($(itemObj).data('endDate') !== $("#eDate").val()) {
                                 $(itemObj).data('endDate', $("#eDate").val());
+                                if (debug_mode) {
+                                    console.log("edateDb: " + $(itemObj).data('endDate') 
+                                            + ", edateUi: " + $("#eDate").val());
+                                }
                             }
                             $(itemObj).data('notes', $("#notes").val());
                             $(itemObj).data('updated', new Date());
@@ -468,7 +476,7 @@
                                 if (debug_mode) {
                                     console.log("loading photo: " + pictureUrl);
                                 }
-                                loadPhoto(pictureUrl, selPictureName, function (exportUrl) {
+                                uploadPhotoGDrive(pictureUrl, selPictureName, function (exportUrl) {
                                     pictureUrl = exportUrl;
                                     mylink = pictureUrl.substring(0, pictureUrl.indexOf("edit") - 1);
                                     if (debug_mode) {
@@ -515,7 +523,7 @@
                                 if (debug_mode) {
                                     console.log("loading photo: " + pictureUrl);
                                 }
-                                loadPhoto(pictureUrl, selPictureName, function (exportUrl) {
+                                uploadPhotoGDrive(pictureUrl, selPictureName, function (exportUrl) {
                                     pictureUrl = exportUrl;
                                     mylink = "\n\nPhoto: " + exportUrl;
                                     if (debug_mode) {
@@ -713,7 +721,8 @@
                 
                 function getPosition () {
                     
-                    if ($("#description").val() === "" && window.navigator.onLine) {
+                    if ($("#description").val() === "" 
+                            && gMapsScriptLoaded && window.navigator.onLine) {
                         
                         navigator.geolocation.getCurrentPosition(
                             function (position) {
@@ -778,7 +787,7 @@
                 
                 //called when sharing
                 //seems to be ok
-                function loadPhoto(imageUrl, pictureName, onComplete) {
+                function uploadPhotoGDrive(imageUrl, pictureName, onComplete) {
 
                     loadImage(
                         imageUrl,
@@ -808,10 +817,10 @@
                 }
                 
                 //ok
-                function loadBase64Data(input, selected, onSuccess) {
+                function loadPhotoFromDatabase(input, selected, onSuccess) {
 
                     if (debug_mode) {
-                        console.log("loadBase64Data called");
+                        console.log("loadPhotoFromDatabase called");
                     }
                     loadImage(input,
                         function (img) {
@@ -842,6 +851,7 @@
                         }, 
                         { 
                             maxWidth: 150,
+                            maxHeight: 150,
                             canvas: true 
                         }
                     );
@@ -853,21 +863,18 @@
                     if (debug_mode) {
                         console.log("initGallery called");
                     }
+                    var idx = 1;
                     $('#iGallery').empty();
                     //var imgRemoved = [];
                     PlacePicture.all()
                             .filter("tripname", "=", tripname)
                             .filter("startDate", "=", startDate)
-                            .order('pictureUri', true)
-                            .list(null, function (items) {
-
-                        var idx = 1;
-                        items.forEach(function(item) {
+                        .forEach(function(item) {
                             
                             if (debug_mode) {
                                 console.log("image found: " + $(item).data('picture'));
                             }
-                            loadBase64Data($(item).data('rawdata'), $(item).data('selectedImg'), 
+                            loadPhotoFromDatabase($(item).data('rawdata'), $(item).data('selectedImg'), 
                                 function (b64data, w, h) {
                                     if (debug_mode) {
                                         console.log("onSuccess called " + b64data);
@@ -892,11 +899,10 @@
                                     $(content).appendTo("#iGallery").enhanceWithin();
                                 });
                             idx = idx + 1;
-                        });
-                        if (idx > 1) {
-                            $("#iGallery").listview("refresh");
-                        }
                     });
+                    if (idx > 1) {
+                        $("#iGallery").listview("refresh");
+                    }
                 }
                 
                 function initWeather() {
@@ -1316,42 +1322,39 @@
                         console.log("onPhotoURISuccess::image URI: " + imageURI);
                     }
                     var pictureName = imageURI.substring(imageURI.lastIndexOf('/') + 1);
-                    loadImageData (imageURI, function (imgData, width, height) {
-                               //to be saved with a name and showed in gallery
-                               //if (debug_mode) {
-                               //     console.log("onPhotoURISuccess::image Data: " + imgData);
-                               //}
-                               persistence.transaction(function(tx) {
-                                    var obj = new PlacePicture({
-                                                    tripname: tripname,
-                                                    startDate: startDate,
-                                                    description: $("#description").val(),
-                                                    picture: pictureName,
-                                                    selectedImg: pictureSel,
-                                                    pictureUri: imageURI,
-                                                    rawdata: imgData
-                                                });
-                                    persistence.add(obj);
-                                    persistence.flush(tx, function(tx) {
-                                        if (tx === undefined || tx.toString() === "") {
-                                            initGallery();
-                                        }
-                                        else {
-                                            navigator.notification.alert(
-                                                    jQuery.i18n.prop("msg_error", tx),
-                                                    null, 'JourneyNotes', 'Ok');
-                                        }
-                                    });
-                                });
+                    loadPhotoFromLibrary (imageURI, function (imgData) {
+                            //to be saved with a name and showed in gallery
+                            persistence.transaction(function(tx) {
+                                 var obj = new PlacePicture({
+                                                 tripname: tripname,
+                                                 startDate: startDate,
+                                                 description: $("#description").val(),
+                                                 picture: pictureName,
+                                                 selectedImg: pictureSel,
+                                                 pictureUri: imageURI,
+                                                 rawdata: imgData
+                                             });
+                                 persistence.add(obj);
+                                 persistence.flush(tx, function(tx) {
+                                     if (tx === undefined || tx.toString() === "") {
+                                         initGallery();
+                                     }
+                                     else {
+                                         navigator.notification.alert(
+                                                 jQuery.i18n.prop("msg_error", tx),
+                                                 null, 'JourneyNotes', 'Ok');
+                                     }
+                                 });
+                             });
                         });
                     
                 }
             
                 //ok
-                function loadImageData(imageUrl, callback) {
+                function loadPhotoFromLibrary(imageUrl, callback) {
                     
                     if (debug_mode) {
-                        console.log("loadImageData called for " + imageUrl);
+                        console.log("loadPhotoFromLibrary called for " + imageUrl);
                     }
                     loadImage(imageUrl,
                           function (img) {
@@ -1364,11 +1367,13 @@
                                 if (debug_mode) {
                                     console.log("image dimensions: " + img.width + ", " + img.height);
                                 }
-                                callback(img.toDataURL("image/png"), img.width, img.height);
+                                callback(img.toDataURL("image/png"));
                               }
                           },
                           {
                               maxWidth: window.screen.availWidth,
+                              maxHeight: window.screen.availHeight,
+                              contain: true,
                               canvas: true
                           }
                     );

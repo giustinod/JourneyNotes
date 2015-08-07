@@ -95,10 +95,10 @@
                             .order('startDate', true).limit(1)
                         .list(null, function (pictures) {
                             pictures.forEach(function(picture) {
-                                if ($(picture).data('selectedImg') === "1") {
+                                //if ($(picture).data('selectedImg') === "1") {
                                     tripPicture = $(picture).data('rawdata');
                                     dfd.resolve();
-                                }
+                                //}
                             }); 
                             if (dfd.state() !== 'resolved') {
                                 tripPicture = "themes/images/missing.png";
