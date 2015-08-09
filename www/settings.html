@@ -5,7 +5,7 @@
         <title>JourneyNotes</title>
     </head>
     <body>
-        <div id="settings" data-role="page">
+        <div id="settings" data-role="page" data-dom-cache="true">
             
             <style scoped>
                 .ui-grid-a .ui-block-a { width: 65%; }
@@ -52,7 +52,7 @@
                 
                 function dumpLocalDatabase (where) {
                     if (typeof gapi !== 'undefined') {
-                        persistence.dumpToJson(null, function(content) {  
+                        persistence.dumpToJson(null, [Trip, TripPlace, TripCategoryItem, TripExpense], function(content) {  
                             if (where === 'google') {
                                 var blob = new Blob([content], { type: "application/json" });
                                 blob.name = "mytrip-localdb.dump";

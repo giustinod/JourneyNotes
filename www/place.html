@@ -215,8 +215,8 @@
                                 //alert("setting coordinates");
                                 localStorage.setItem("mytrip_place_lat", lat);
                                 localStorage.setItem("mytrip_place_lng", lng);
-                                $("#sDate").val($(item).data('startDate').toString('yyyy-MM-ddThh:mm'));
-                                $("#eDate").val($(item).data('endDate').toString('yyyy-MM-ddThh:mm'));
+                                $("#sDate").val(getDatetimeLocal($(item).data('startDate')));
+                                $("#eDate").val(getDatetimeLocal($(item).data('endDate')));
                                 $("#notes").val($(item).data('notes'));
                     });
                     
@@ -387,27 +387,14 @@
                             $(itemObj).data('description', $("#description").val());
                             $(itemObj).data('locationx', lat);
                             $(itemObj).data('locationy', lng);
-                            if ($(itemObj).data('startDate') !== $("#sDate").val()) {
-                                //update startDate for all pictures
-                                //alert("db dt: " + $(itemObj).data('startDate') + ", ui dt: " + $("#sDate").val());
-                                PlacePicture.all().filter("tripname", "=", tripname)
-                                    .filter("startDate", "=", startDate)
-                                    .forEach(function(pict) {
-                                        $(pict).data('startDate', $("#sDate").val());
-                                });
-                                if (debug_mode) {
-                                    console.log("sdateDb: " + $(itemObj).data('startDate') 
-                                            + ", sdateUi: " + $("#sDate").val());
-                                }
-                                $(itemObj).data('startDate', $("#sDate").val());
-                            }
-                            if ($(itemObj).data('endDate') !== $("#eDate").val()) {
-                                $(itemObj).data('endDate', $("#eDate").val());
-                                if (debug_mode) {
-                                    console.log("edateDb: " + $(itemObj).data('endDate') 
-                                            + ", edateUi: " + $("#eDate").val());
-                                }
-                            }
+                            //update startDate for all pictures
+                            PlacePicture.all().filter("tripname", "=", tripname)
+                                .filter("startDate", "=", startDate)
+                                .forEach(function(pict) {
+                                    $(pict).data('startDate', new Date($("#sDate").val()));
+                            });
+                            $(itemObj).data('startDate', new Date($("#sDate").val()));
+                            $(itemObj).data('endDate', new Date($("#eDate").val()));
                             $(itemObj).data('notes', $("#notes").val());
                             $(itemObj).data('updated', new Date());
                         }
@@ -731,7 +718,7 @@
                                 localStorage.setItem("mytrip_place_lat", lat);
                                 localStorage.setItem("mytrip_place_lng", lng);
                                 if ($("#sDate").val() === "") {
-                                    $("#sDate").val(new Date().toString('yyyy-MM-ddThh:mm'));
+                                    $("#sDate").val(getDatetimeLocal(Date.today()));
                                 }
                                 var youAreHere = new google.maps.LatLng(lat, lng);
                                 var geocoder = new google.maps.Geocoder();

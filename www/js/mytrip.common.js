@@ -230,3 +230,29 @@ function getDateFromField(dt) {
         return dt;
     }
 }
+
+/*
+ * http://encosia.com/setting-the-value-of-a-datetime-local-input-with-javascript/
+ */
+function getDatetimeLocal(cDate) {
+    
+    if (debug_mode) {
+        console.log("getdatetimelocal - input: " + cDate.toISOString());
+    }
+    // Find the current time zone's offset in milliseconds.
+    var timezoneOffset = cDate.getTimezoneOffset() * 60 * 1000;
+    if (debug_mode) {
+        console.log("getdatetimelocal - timezoneOffset: " + timezoneOffset);
+    }
+    
+    // Subtract the time zone offset from the current UTC date, and pass
+    //  that into the Date constructor to get a date whose UTC date/time is
+    //  adjusted by timezoneOffset for display purposes.
+    var localDate = new Date(cDate.getTime() + timezoneOffset);
+    if (debug_mode) {
+        console.log("getdatetimelocal - returned: " + localDate.toISOString());
+    }
+    
+    // Get that local date's ISO date string and remove the Z.
+    return localDate.toString('yyyy-MM-ddTHH:mm');
+}

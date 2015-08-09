@@ -89,7 +89,7 @@
                                 $("#expcategory").val($(item).data('expcategory'));
                                 $('#expcategory').selectmenu("refresh");
                                 $("#description").val($(item).data('description'));
-                                $("#eDate").val($(item).data('eDate').toString('yyyy-MM-ddThh:mm'));
+                                $("#eDate").val(getDatetimeLocal($(item).data('eDate')));
                                 $("#amount").val($(item).data('amount'));
                                 $("#notes").val($(item).data('notes'));
                             });
